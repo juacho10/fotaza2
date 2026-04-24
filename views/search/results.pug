@@ -1,0 +1,69 @@
+extends ../layouts/layout
+
+block content
+  h1 Resultados de búsqueda
+  
+  .card.mb-4
+    .card-body
+      form(method="GET", action="/search")
+        .row
+          .col-md-4.mb-2
+            input.form-control(type="text", name="q", placeholder="Buscar por título o descripción", value=query.q)
+          .col-md-3.mb-2
+            input.form-control(type="text", name="author", placeholder="Autor", value=query.author)
+          .col-md-3.mb-2
+            input.form-control(type="text", name="tag", placeholder="Etiqueta", value=query.tag)
+          .col-md-2.mb-2
+            button.btn.btn-primary.w-100(type="submit")
+              i.bi.bi-search.me-1
+              | Buscar
+  
+  if hasResults
+    p.text-muted Se encontraron #{totalResults} resultados
+    
+    .row
+      each post in posts
+        .col-md-4.mb-4
+          .card.h-100
+            .card-body
+              h5.card-title= post.title
+              p.card-text.text-muted.small
+                i.bi.bi-person.me-1
+                a.text-decoration-none(href=`/users/${post.user_id}`)= post.username
+                br
+                i.bi.bi-calendar3.me-1
+                | #{new Date(post.created_at).toLocaleDateString()}
+              if post.description
+                p.card-text= post.description.substring(0, 100) + (post.description.length > 100 ? '...' : '')
+              if post.tags
+                .mb-2
+                  each tag in post.tags.split(',')
+                    span.badge.bg-secondary.me-1= tag.trim()
+              .d-flex.justify-content-between.align-items-center.mt-2
+                .rating
+                  - var avg = post.avg_rating || 0
+                  - var fullStars = Math.floor(avg)
+                  - for(var i = 0; i < fullStars; i++)
+                    i.bi.bi-star-fill.text-warning
+                  - for(var i = fullStars; i < 5; i++)
+                    i.bi.bi-star.text-secondary
+                  span.ms-1.small.text-muted (#{post.rating_count || 0})
+                a.btn.btn-sm.btn-outline-primary(href=`/posts/${post.id}`) Ver más
+    
+    if totalPages > 1
+      nav.mt-4
+        ul.pagination.justify-content-center
+          if currentPage > 1
+            li.page-item
+              a.page-link(href=`?q=${query.q || ''}&author=${query.author || ''}&tag=${query.tag || ''}&page=${currentPage - 1}`) Anterior
+          - for(var i = 1; i <= totalPages; i++)
+            li.page-item(class= i === currentPage ? 'active' : '')
+              a.page-link(href=`?q=${query.q || ''}&author=${query.author || ''}&tag=${query.tag || ''}&page=${i}`)= i
+          if currentPage < totalPages
+            li.page-item
+              a.page-link(href=`?q=${query.q || ''}&author=${query.author || ''}&tag=${query.tag || ''}&page=${currentPage + 1}`) Siguiente
+  else
+    .alert.alert-info
+      i.bi.bi-info-circle.me-2
+      | No se encontraron resultados para tu búsqueda. 
+      a(href="/") Volver al inicio

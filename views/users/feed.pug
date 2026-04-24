@@ -1,0 +1,42 @@
+extends ../layouts/layout
+
+block content
+  h1.mb-4
+    i.bi.bi-newspaper.me-2
+    | Publicaciones de usuarios que sigo
+  
+  if posts && posts.length > 0
+    .row
+      each post in posts
+        .col-md-4.mb-4
+          .card.h-100.shadow-sm
+            .card-body
+              h5.card-title= post.title
+              p.card-text.text-muted.small
+                i.bi.bi-person.me-1
+                a.text-decoration-none(href=`/users/${post.user_id}`)= post.username
+                br
+                i.bi.bi-calendar3.me-1
+                | #{new Date(post.created_at).toLocaleDateString('es-ES')}
+              if post.description
+                p.card-text.small= post.description.substring(0, 100) + (post.description.length > 100 ? '...' : '')
+              if post.tags
+                .mb-2
+                  each tag in post.tags.split(',')
+                    if tag && tag.trim()
+                      span.badge.bg-secondary.me-1= tag.trim()
+              .d-flex.justify-content-between.align-items-center.mt-2
+                .rating
+                  - var avg = parseFloat(post.avg_rating) || 0
+                  - for(var i = 0; i < Math.floor(avg); i++)
+                    i.bi.bi-star-fill.text-warning
+                  - for(var i = Math.floor(avg); i < 5; i++)
+                    i.bi.bi-star.text-secondary
+                  span.ms-1.small.text-muted (#{post.rating_count || 0})
+                a.btn.btn-sm.btn-outline-primary(href=`/posts/${post.id}`) Ver más
+  else
+    .alert.alert-info.text-center
+      i.bi.bi-people.me-2
+      | Aún no sigues a nadie o los usuarios que sigues no tienen publicaciones.
+      br
+      a(href="/search") Buscar usuarios para seguir

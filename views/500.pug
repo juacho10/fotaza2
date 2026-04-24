@@ -1,0 +1,14 @@
+extends layouts/layout
+
+block content
+  .row.justify-content-center
+    .col-md-6.text-center
+      .card.shadow-sm
+        .card-body
+          i.bi.bi-bug(style="font-size: 80px; color: #dc3545;")
+          h1.mt-3 500
+          h4 Error del servidor
+          p.text-muted Algo salió mal. Por favor, intenta más tarde.
+          a.btn.btn-primary(href="/")
+            i.bi.bi-house.me-1
+            | Volver al inicio

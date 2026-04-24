@@ -1,0 +1,36 @@
+extends ../layouts/layout
+
+block content
+  .row.justify-content-center
+    .col-md-6.col-lg-5
+      .card.shadow
+        .card-header.bg-primary.text-white
+          h4.mb-0
+            i.bi.bi-box-arrow-in-right.me-2
+            | Iniciar sesión
+        .card-body
+          if error
+            .alert.alert-danger= error
+          
+          form(method="POST", action="/login")
+            .mb-3
+              label.form-label(for="email") Email
+              .input-group
+                span.input-group-text
+                  i.bi.bi-envelope
+                input.form-control(type="email", name="email", id="email", required, placeholder="tu@email.com")
+            .mb-3
+              label.form-label(for="password") Contraseña
+              .input-group
+                span.input-group-text
+                  i.bi.bi-lock
+                input.form-control(type="password", name="password", id="password", required, placeholder="••••••")
+            button.btn.btn-primary.w-100(type="submit")
+              i.bi.bi-box-arrow-in-right.me-2
+              | Ingresar
+          
+          hr
+          
+          .text-center
+            p.mb-0 ¿No tienes cuenta? 
+              a(href="/register") Regístrate aquí

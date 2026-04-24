@@ -1,0 +1,83 @@
+extends ../layouts/layout
+
+block content
+  .row
+    .col-md-8.offset-md-2
+      .d-flex.justify-content-between.align-items-center.mb-4
+        h2
+          i.bi.bi-bell.me-2
+          | Notificaciones
+        if unreadCount > 0
+          form(action="/users/notifications/mark-all", method="POST")
+            button.btn.btn-sm.btn-secondary(type="submit")
+              i.bi.bi-envelope-check.me-1
+              | Marcar todas como leídas
+      
+      if notifications && notifications.length > 0
+        .list-group
+          each notification in notifications
+            .list-group-item.notification-item(class= !notification.is_read ? 'unread' : '')
+              .d-flex.justify-content-between.align-items-center
+                div
+                  strong
+                    if notification.type === 'comment'
+                      i.bi.bi-chat-dots.me-2.text-primary
+                      | #{notification.source_username} comentó tu publicación
+                    else if notification.type === 'rating'
+                      i.bi.bi-star.me-2.text-warning
+                      | #{notification.source_username} valoró tu imagen
+                    else if notification.type === 'interest'
+                      i.bi.bi-heart.me-2.text-danger
+                      | #{notification.source_username} está interesado en tu imagen
+                    else if notification.type === 'follow'
+                      i.bi.bi-person-plus.me-2.text-success
+                      | #{notification.source_username} comenzó a seguirte
+                    else if notification.type === 'message'
+                      i.bi.bi-envelope.me-2.text-info
+                      | #{notification.source_username} te envió un mensaje
+                    else
+                      i.bi.bi-bell.me-2
+                      | #{notification.source_username} interactuó contigo
+                  br
+                  small.text-muted
+                    i.bi.bi-clock.me-1
+                    | #{new Date(notification.created_at).toLocaleString()}
+                  if notification.post_title
+                    br
+                    small.text-muted Publicación: #{notification.post_title}
+                if !notification.is_read
+                  button.btn.btn-sm.btn-outline-primary.mark-read(data-id=notification.id)
+                    i.bi.bi-check2.me-1
+                    | Marcar como leída
+      else
+        .alert.alert-info.text-center
+          i.bi.bi-bell-slash.me-2
+          | No tienes notificaciones
+
+  script.
+    document.querySelectorAll('.mark-read').forEach(btn => {
+      btn.addEventListener('click', async (e) => {
+        e.stopPropagation();
+        const id = btn.dataset.id;
+        try {
+          const response = await fetch(`/users/notifications/${id}/read`, { method: 'POST' });
+          if (response.ok) {
+            const item = btn.closest('.notification-item');
+            item.classList.remove('unread');
+            btn.remove();
+            
+            const badge = document.getElementById('unread-badge');
+            if (badge) {
+              const count = parseInt(badge.textContent) - 1;
+              if (count > 0) {
+                badge.textContent = count;
+              } else {
+                badge.style.display = 'none';
+              }
+            }
+          }
+        } catch (error) {
+          console.error('Error:', error);
+        }
+      });
+    });

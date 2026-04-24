@@ -1,0 +1,14 @@
+extends layouts/layout
+
+block content
+  .row.justify-content-center
+    .col-md-6.text-center
+      .card.shadow-sm
+        .card-body
+          i.bi.bi-shield-lock(style="font-size: 80px; color: #dc3545;")
+          h1.mt-3 403
+          h4 Acceso denegado
+          p.text-muted No tienes permisos para acceder a esta página.
+          a.btn.btn-primary(href="/")
+            i.bi.bi-house.me-1
+            | Volver al inicio

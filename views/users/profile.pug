@@ -1,0 +1,115 @@
+extends ../layouts/layout
+
+block content
+  .row
+    .col-md-4.mb-4
+      .card.shadow-sm.text-center
+        .card-body
+          .avatar.mb-3
+            i.bi.bi-person-circle(style="font-size: 80px;")
+          if profileUser
+            h3= profileUser.username
+            p.text-muted
+              i.bi.bi-envelope.me-1
+              = profileUser.email
+            p
+              i.bi.bi-calendar.me-1
+              | Miembro desde #{new Date(profileUser.created_at).toLocaleDateString('es-ES')}
+            
+            hr
+            
+            .row
+              .col-6
+                h5= followersCount || 0
+                small.text-muted Seguidores
+              .col-6
+                h5= followingCount || 0
+                small.text-muted Siguiendo
+            
+            if currentUser && currentUser.id !== profileUser.id
+              hr
+              if isFollowing
+                button.btn.btn-outline-danger.w-100.unfollow-btn(data-user-id=profileUser.id)
+                  i.bi.bi-person-dash.me-1
+                  | Dejar de seguir
+              else
+                button.btn.btn-outline-primary.w-100.follow-btn(data-user-id=profileUser.id)
+                  i.bi.bi-person-plus.me-1
+                  | Seguir
+            
+            if currentUser && currentUser.id === profileUser.id
+              hr
+              button.btn.btn-outline-secondary.w-100(data-bs-toggle="modal", data-bs-target="#editProfileModal")
+                i.bi.bi-pencil.me-1
+                | Editar perfil
+          else
+            p Usuario no encontrado
+    
+    .col-md-8
+      .card.shadow-sm
+        .card-header.bg-light
+          h5.mb-0
+            i.bi.bi-images.me-2
+            | Publicaciones de #{profileUser ? profileUser.username : ''}
+        .card-body
+          if posts && posts.length > 0
+            .row
+              each post in posts
+                .col-md-6.mb-3
+                  .card.h-100
+                    .card-body
+                      h6.card-title= post.title
+                      p.card-text.text-muted.small= new Date(post.created_at).toLocaleDateString()
+                      .d-flex.justify-content-between.align-items-center
+                        .rating
+                          - var avg = parseFloat(post.avg_rating) || 0
+                          - for(var i = 0; i < Math.floor(avg); i++)
+                            i.bi.bi-star-fill.text-warning
+                          - for(var i = Math.floor(avg); i < 5; i++)
+                            i.bi.bi-star.text-secondary
+                          span.ms-1.small.text-muted (#{post.rating_count || 0})
+                        a.btn.btn-sm.btn-outline-primary(href=`/posts/${post.id}`) Ver
+          else
+            p.text-muted.text-center No hay publicaciones aún.
+            if isOwnProfile
+              a(href="/posts/create") ¡Crea tu primera publicación!
+
+  if currentUser && profileUser && currentUser.id === profileUser.id
+    .modal.fade(tabindex="-1", id="editProfileModal")
+      .modal-dialog
+        .modal-content
+          form(action=`/users/${profileUser.id}/edit`, method="POST")
+            .modal-header
+              h5.modal-title Editar perfil
+              button.btn-close(type="button", data-bs-dismiss="modal")
+            .modal-body
+              .mb-3
+                label.form-label Nombre de usuario
+                input.form-control(type="text", name="username", value=profileUser.username, required)
+              .mb-3
+                label.form-label Email
+                input.form-control(type="email", name="email", value=profileUser.email, required)
+            .modal-footer
+              button.btn.btn-secondary(type="button", data-bs-dismiss="modal") Cancelar
+              button.btn.btn-primary(type="submit") Guardar cambios
+
+  script.
+    document.querySelectorAll('.follow-btn, .unfollow-btn').forEach(btn => {
+      btn.addEventListener('click', async () => {
+        const userId = btn.dataset.userId;
+        const isFollowing = btn.classList.contains('unfollow-btn');
+        const url = isFollowing ? `/users/${userId}/unfollow` : `/users/${userId}/follow`;
+        
+        try {
+          const response = await fetch(url, { method: 'POST' });
+          if (response.ok) {
+            location.reload();
+          } else {
+            const data = await response.json();
+            alert(data.error || 'Error al procesar la solicitud');
+          }
+        } catch (error) {
+          alert('Error de conexión');
+        }
+      });
+    });

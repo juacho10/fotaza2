@@ -1,0 +1,137 @@
+extends ../layouts/layout
+
+block content
+  .row
+    .col-md-8.offset-md-2
+      .d-flex.justify-content-between.align-items-center.mb-4
+        h2
+          i.bi.bi-bookmark-star.me-2
+          | Mis colecciones
+        button.btn.btn-primary(data-bs-toggle="modal", data-bs-target="#createCollectionModal")
+          i.bi.bi-plus.me-1
+          | Nueva colección
+      
+      if collections && collections.length > 0
+        .row
+          each collection in collections
+            .col-md-4.mb-3
+              .card.h-100.collection-card
+                .card-body
+                  h5.card-title
+                    i.bi.bi-folder.me-2
+                    = collection.name
+                  p.card-text
+                    i.bi.bi-images.me-1
+                    | #{collection.post_count || 0} publicaciones
+                    br
+                    i.bi.bi-calendar.me-1
+                    | Creada el #{new Date(collection.created_at).toLocaleDateString()}
+                  button.btn.btn-sm.btn-outline-primary.view-collection(data-id=collection.id, data-name=collection.name)
+                    i.bi.bi-eye.me-1
+                    | Ver publicaciones
+      else
+        .alert.alert-info.text-center
+          i.bi.bi-folder2-open.me-2
+          | No tienes colecciones. 
+          button.btn.btn-link(data-bs-toggle="modal", data-bs-target="#createCollectionModal") ¡Crea tu primera colección!
+
+  .modal.fade(tabindex="-1", id="createCollectionModal")
+    .modal-dialog
+      .modal-content
+        form(action="/users/collections", method="POST")
+          .modal-header
+            h5.modal-title
+              i.bi.bi-folder-plus.me-2
+              | Crear nueva colección
+            button.btn-close(type="button", data-bs-dismiss="modal")
+          .modal-body
+            .mb-3
+              label.form-label Nombre de la colección
+              input.form-control(type="text", name="name", required, placeholder="Ej: Paisajes, Inspiración, Ideas")
+          .modal-footer
+            button.btn.btn-secondary(type="button", data-bs-dismiss="modal") Cancelar
+            button.btn.btn-primary(type="submit") Crear
+
+  .modal.fade(tabindex="-1", id="viewCollectionModal")
+    .modal-dialog.modal-lg
+      .modal-content
+        .modal-header
+          h5.modal-title
+            i.bi.bi-folder.me-2
+            | Colección: <span id="collectionName"></span>
+          button.btn-close(type="button", data-bs-dismiss="modal")
+        .modal-body
+          #collectionPosts
+            .text-center
+              .spinner-border.text-primary(role="status")
+                span.visually-hidden Cargando...
+        .modal-footer
+          button.btn.btn-secondary(type="button", data-bs-dismiss="modal") Cerrar
+
+  script.
+    document.querySelectorAll('.view-collection').forEach(btn => {
+      btn.addEventListener('click', async () => {
+        const collectionId = btn.dataset.id;
+        const collectionName = btn.dataset.name;
+        document.getElementById('collectionName').textContent = collectionName;
+        
+        try {
+          const response = await fetch(`/api/collections/${collectionId}/posts`);
+          const posts = await response.json();
+          
+          const container = document.getElementById('collectionPosts');
+          if (posts && posts.length > 0) {
+            container.innerHTML = '<div class="row">' + posts.map(post => `
+              <div class="col-md-6 mb-3">
+                <div class="card">
+                  <div class="card-body">
+                    <h6 class="card-title">${escapeHtml(post.title)}</h6>
+                    <p class="card-text small text-muted">Por ${escapeHtml(post.username)}</p>
+                    <div class="d-flex gap-2">
+                      <a href="/posts/${post.id}" class="btn btn-sm btn-primary">Ver</a>
+                      <button class="btn btn-sm btn-danger remove-from-collection" data-collection="${collectionId}" data-post="${post.id}">Eliminar</button>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            `).join('') + '</div>';
+          } else {
+            container.innerHTML = '<p class="text-muted text-center">No hay publicaciones en esta colección</p>';
+          }
+          
+          new bootstrap.Modal(document.getElementById('viewCollectionModal')).show();
+        } catch (error) {
+          console.error('Error:', error);
+          document.getElementById('collectionPosts').innerHTML = '<p class="text-danger">Error al cargar las publicaciones</p>';
+        }
+      });
+    });
+    
+    function escapeHtml(text) {
+      const div = document.createElement('div');
+      div.textContent = text;
+      return div.innerHTML;
+    }
+    
+    document.addEventListener('click', async (e) => {
+      if (e.target.classList.contains('remove-from-collection')) {
+        const collectionId = e.target.dataset.collection;
+        const postId = e.target.dataset.post;
+        
+        if (confirm('¿Eliminar esta publicación de la colección?')) {
+          try {
+            const response = await fetch(`/users/collections/${collectionId}/posts/${postId}`, {
+              method: 'DELETE'
+            });
+            if (response.ok) {
+              e.target.closest('.col-md-6').remove();
+              alert('Publicación eliminada de la colección');
+            } else {
+              alert('Error al eliminar');
+            }
+          } catch (error) {
+            alert('Error de conexión');
+          }
+        }
+      }
+    });

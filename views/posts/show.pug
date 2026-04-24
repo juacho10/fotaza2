@@ -1,0 +1,295 @@
+extends ../layouts/layout
+
+block content
+  .row
+    .col-lg-8
+      .card.shadow-sm.mb-4
+        .card-body
+          h1= post ? post.title : 'Publicación no encontrada'
+          if post
+            .text-muted.mb-3
+              i.bi.bi-person.me-1
+              | Por 
+              a.text-decoration-none(href=`/users/${post.user_id}`)= post.username
+              i.bi.bi-calendar3.ms-3.me-1
+              | #{post.created_at ? new Date(post.created_at).toLocaleDateString('es-ES') : 'Fecha desconocida'}
+              if post.is_reported
+                span.badge.bg-warning.ms-3
+                  i.bi.bi-flag.me-1
+                  | Denunciada (en revisión)
+            
+            if post.description
+              p.lead= post.description
+            
+            if post.tags
+              .mb-3
+                i.bi.bi-tags.me-1
+                each tag in post.tags.split(',')
+                  if tag && tag.trim()
+                    span.badge.bg-secondary.me-1= tag.trim()
+            
+            hr
+            
+            if images && images.length > 0
+              each image in images
+                .image-card.mb-3
+                  if image.file_path
+                    img.img-fluid.rounded(src=image.file_path, alt=post.title, style="width:100%; max-height:400px; object-fit:contain;")
+                  else
+                    .alert.alert-warning Imagen no disponible
+                  .image-info.mt-2.d-flex.justify-content-between.align-items-center
+                    .rating
+                      - var avg = parseFloat(image.average_rating) || 0
+                      - var fullStars = Math.floor(avg)
+                      - for(var i = 0; i < fullStars; i++)
+                        i.bi.bi-star-fill.text-warning
+                      - for(var i = fullStars; i < 5; i++)
+                        i.bi.bi-star.text-secondary
+                      span.ms-2.text-muted (#{image.rating_count || 0} valoraciones)
+                    
+                    if currentUser && currentUser.id !== post.user_id
+                      .image-actions
+                        button.btn.btn-sm.btn-outline-warning.rate-btn.me-1(data-image-id=image.id)
+                          i.bi.bi-star
+                          |  Valorar
+                        button.btn.btn-sm.btn-outline-success.interest-btn(data-image-id=image.id)
+                          i.bi.bi-heart
+                          |  Me interesa
+            else
+              .alert.alert-info No hay imágenes disponibles para esta publicación
+            
+            .card.shadow-sm.mt-4
+              .card-header.bg-light
+                h5.mb-0
+                  i.bi.bi-chat-dots.me-2
+                  | Comentarios 
+                  if post.comments_open
+                    span.badge.bg-success.ms-2 Abiertos
+                  else
+                    span.badge.bg-danger.ms-2 Cerrados
+              
+              .card-body
+                if post.comments_open && currentUser
+                  form(action=`/posts/${post.id}/comments`, method="POST", class="mb-4")
+                    .mb-3
+                      textarea.form-control(name="content", rows="3", placeholder="Escribe un comentario...", required)
+                    button.btn.btn-primary(type="submit")
+                      i.bi.bi-send.me-1
+                      | Comentar
+                
+                if comments && comments.length > 0
+                  each comment in comments
+                    .comment.mb-3.pb-3.border-bottom
+                      .d-flex.justify-content-between.align-items-start
+                        .comment-header
+                          strong
+                            i.bi.bi-person-circle.me-1
+                            a.text-decoration-none(href=`/users/${comment.user_id}`)= comment.username
+                          span.text-muted.ms-2.small= new Date(comment.created_at).toLocaleString()
+                        if currentUser && (currentUser.id === comment.user_id || currentUser.id === post.user_id)
+                          form.d-inline(action=`/posts/comments/${comment.id}?_method=DELETE`, method="POST", class="ms-2", onsubmit="return confirm('¿Eliminar comentario?')")
+                            button.btn.btn-sm.btn-link.text-danger(type="submit")
+                              i.bi.bi-trash
+                      p.mb-1.mt-2= comment.content
+                      if currentUser && currentUser.id !== comment.user_id && currentUser.id !== post.user_id
+                        button.btn.btn-sm.btn-link.text-warning.report-comment-btn(data-comment-id=comment.id)
+                          i.bi.bi-flag
+                          |  Denunciar
+                else
+                  p.text-muted.text-center No hay comentarios aún.
+          else
+            .alert.alert-danger Publicación no encontrada
+    
+    .col-lg-4
+      if post
+        if currentUser && currentUser.id === post.user_id
+          .card.shadow-sm.mb-4
+            .card-header.bg-light
+              h5.mb-0
+                i.bi.bi-gear.me-2
+                | Acciones
+            .card-body
+              if !post.is_reported
+                a.btn.btn-warning.btn-sm.w-100.mb-2(href=`/posts/${post.id}/edit`)
+                  i.bi.bi-pencil.me-1
+                  | Editar publicación
+              form(action=`/posts/${post.id}?_method=DELETE`, method="POST", onsubmit="return confirm('¿Eliminar esta publicación?')")
+                button.btn.btn-danger.btn-sm.w-100.mb-2(type="submit")
+                  i.bi.bi-trash.me-1
+                  | Eliminar publicación
+              hr
+              form(action=`/posts/${post.id}/comments/toggle`, method="POST")
+                if post.comments_open
+                  button.btn.btn-secondary.btn-sm.w-100(type="submit")
+                    i.bi.bi-lock.me-1
+                    | Cerrar comentarios
+                else
+                  button.btn.btn-success.btn-sm.w-100(type="submit")
+                    i.bi.bi-unlock.me-1
+                    | Abrir comentarios
+        
+        if currentUser && currentUser.id !== post.user_id && !post.is_reported
+          .card.shadow-sm.mb-4
+            .card-header.bg-light
+              h5.mb-0
+                i.bi.bi-flag.me-2
+                | Denunciar
+            .card-body
+              button.btn.btn-outline-danger.btn-sm.w-100(data-bs-toggle="modal", data-bs-target="#reportModal")
+                i.bi.bi-flag.me-1
+                | Denunciar esta publicación
+        
+        .card.shadow-sm
+          .card-header.bg-light
+            h5.mb-0
+              i.bi.bi-info-circle.me-2
+              | Información
+          .card-body
+            p.mb-2
+              i.bi.bi-chat.me-2
+              strong Comentarios: 
+              | #{comments ? comments.length : 0}
+            p.mb-2
+              i.bi.bi-star.me-2
+              strong Valoración promedio: 
+              | #{post.avg_rating ? parseFloat(post.avg_rating).toFixed(1) : 'Sin valoraciones'}
+            if post.rating_count
+              p.mb-0
+                i.bi.bi-people.me-2
+                strong Total valoraciones: 
+                | #{post.rating_count}
+
+  if post
+    .modal.fade(tabindex="-1", id="reportModal")
+      .modal-dialog
+        .modal-content
+          form(action=`/posts/${post.id}/report`, method="POST")
+            .modal-header
+              h5.modal-title
+                i.bi.bi-flag.me-2
+                | Denunciar publicación
+              button.btn-close(type="button", data-bs-dismiss="modal")
+            .modal-body
+              .mb-3
+                label.form-label Motivo *
+                select.form-control(name="reason", required)
+                  option(value="") Seleccionar...
+                  option(value="spam") Spam o contenido engañoso
+                  option(value="inappropriate") Contenido inapropiado
+                  option(value="copyright") Violación de derechos de autor
+                  option(value="harassment") Acoso o insultos
+                  option(value="violence") Contenido violento
+                  option(value="other") Otro
+              .mb-3
+                label.form-label Descripción
+                textarea.form-control(name="description", rows="3")
+            .modal-footer
+              button.btn.btn-secondary(type="button", data-bs-dismiss="modal") Cancelar
+              button.btn.btn-danger(type="submit")
+                i.bi.bi-flag.me-1
+                | Denunciar
+
+    .modal.fade(tabindex="-1", id="rateModal")
+      .modal-dialog
+        .modal-content
+          .modal-header
+            h5.modal-title
+              i.bi.bi-star.me-2
+              | Valorar imagen
+            button.btn-close(type="button", data-bs-dismiss="modal")
+          .modal-body
+            .rating-input.text-center
+              .stars.d-inline-flex.flex-row-reverse
+                input(type="radio", name="rating", value="5", id="star5")
+                label(for="star5") ★
+                input(type="radio", name="rating", value="4", id="star4")
+                label(for="star4") ★
+                input(type="radio", name="rating", value="3", id="star3")
+                label(for="star3") ★
+                input(type="radio", name="rating", value="2", id="star2")
+                label(for="star2") ★
+                input(type="radio", name="rating", value="1", id="star1")
+                label(for="star1") ★
+          .modal-footer
+            button.btn.btn-secondary(type="button", data-bs-dismiss="modal") Cancelar
+            button.btn.btn-primary(type="button", id="submitRating") Enviar valoración
+
+    block scripts
+      script.
+        let currentImageId = null;
+        
+        document.querySelectorAll('.rate-btn').forEach(btn => {
+          btn.addEventListener('click', () => {
+            currentImageId = btn.dataset.imageId;
+            new bootstrap.Modal(document.getElementById('rateModal')).show();
+          });
+        });
+        
+        document.getElementById('submitRating')?.addEventListener('click', async () => {
+          const rating = document.querySelector('input[name="rating"]:checked')?.value;
+          if (!rating) {
+            alert('Selecciona una valoración');
+            return;
+          }
+          
+          try {
+            const response = await fetch(`/posts/images/${currentImageId}/rate`, {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({ value: rating })
+            });
+            
+            const data = await response.json();
+            if (response.ok && data.success) {
+              location.reload();
+            } else {
+              alert(data.error || 'Error al valorar');
+            }
+          } catch (error) {
+            alert('Error de conexión');
+          }
+        });
+        
+        document.querySelectorAll('.interest-btn').forEach(btn => {
+          btn.addEventListener('click', async () => {
+            const imageId = btn.dataset.imageId;
+            try {
+              const response = await fetch(`/posts/images/${imageId}/interest`, { method: 'POST' });
+              if (response.ok) {
+                alert('Se ha notificado al autor de tu interés');
+                btn.disabled = true;
+                btn.innerHTML = '<i class="bi bi-heart-fill"></i> Interés enviado';
+              } else {
+                const data = await response.json();
+                alert(data.error || 'Error al marcar interés');
+              }
+            } catch (error) {
+              alert('Error de conexión');
+            }
+          });
+        });
+        
+        document.querySelectorAll('.report-comment-btn').forEach(btn => {
+          btn.addEventListener('click', async () => {
+            const commentId = btn.dataset.commentId;
+            const reason = prompt('Motivo de la denuncia (spam, inapropiado, acoso, etc.):');
+            if (!reason) return;
+            const description = prompt('Describe el motivo (opcional):');
+            
+            try {
+              const response = await fetch(`/posts/comments/${commentId}/report`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ reason, description })
+              });
+              if (response.ok) {
+                alert('Denuncia enviada. Gracias por ayudar a mantener la comunidad segura.');
+              } else {
+                const data = await response.json();
+                alert(data.error || 'Error al denunciar');
+              }
+            } catch (error) {
+              alert('Error de conexión');
+            }
+          });
+        });

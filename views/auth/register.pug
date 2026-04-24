@@ -1,0 +1,48 @@
+extends ../layouts/layout
+
+block content
+  .row.justify-content-center
+    .col-md-6.col-lg-5
+      .card.shadow
+        .card-header.bg-success.text-white
+          h4.mb-0
+            i.bi.bi-person-plus.me-2
+            | Crear cuenta
+        .card-body
+          if error
+            .alert.alert-danger= error
+          
+          form(method="POST", action="/register")
+            .mb-3
+              label.form-label(for="username") Nombre de usuario
+              .input-group
+                span.input-group-text
+                  i.bi.bi-person
+                input.form-control(type="text", name="username", id="username", required, placeholder="usuario123")
+            .mb-3
+              label.form-label(for="email") Email
+              .input-group
+                span.input-group-text
+                  i.bi.bi-envelope
+                input.form-control(type="email", name="email", id="email", required, placeholder="tu@email.com")
+            .mb-3
+              label.form-label(for="password") Contraseña
+              .input-group
+                span.input-group-text
+                  i.bi.bi-lock
+                input.form-control(type="password", name="password", id="password", required, placeholder="Mínimo 6 caracteres")
+            .mb-3
+              label.form-label(for="confirm_password") Confirmar contraseña
+              .input-group
+                span.input-group-text
+                  i.bi.bi-lock-fill
+                input.form-control(type="password", name="confirm_password", id="confirm_password", required, placeholder="Repite tu contraseña")
+            button.btn.btn-success.w-100(type="submit")
+              i.bi.bi-person-plus.me-2
+              | Registrarse
+          
+          hr
+          
+          .text-center
+            p.mb-0 ¿Ya tienes cuenta? 
+              a(href="/login") Inicia sesión aquí

@@ -1,0 +1,110 @@
+extends ../layouts/layout
+
+block content
+  .row
+    .col-md-8.offset-md-2
+      .d-flex.justify-content-between.align-items-center.mb-4
+        h2
+          i.bi.bi-envelope.me-2
+          | Mensajes
+        button.btn.btn-primary(data-bs-toggle="modal", data-bs-target="#newMessageModal")
+          i.bi.bi-plus.me-1
+          | Nuevo mensaje
+      
+      if conversations && conversations.length > 0
+        .list-group
+          each conv in conversations
+            a.list-group-item.list-group-item-action(href=`/users/messages/${conv.sender_id === currentUser.id ? conv.receiver_id : conv.sender_id}`)
+              .d-flex.justify-content-between.align-items-center
+                div
+                  strong
+                    i.bi.bi-person-circle.me-2
+                    | #{conv.sender_id === currentUser.id ? conv.receiver_username : conv.sender_username}
+                  br
+                  small.text-muted
+                    i.bi.bi-envelope.me-1
+                    | #{conv.subject || 'Sin asunto'}
+                  br
+                  small.text-muted
+                    i.bi.bi-clock.me-1
+                    | #{new Date(conv.created_at).toLocaleString()}
+                if !conv.is_read && conv.receiver_id === currentUser.id
+                  span.badge.bg-primary Nuevo
+      else
+        .alert.alert-info.text-center
+          i.bi.bi-envelope-slash.me-2
+          | No tienes mensajes
+          button.btn.btn-link(data-bs-toggle="modal", data-bs-target="#newMessageModal") ¡Envía tu primer mensaje!
+
+  .modal.fade(tabindex="-1", id="newMessageModal")
+    .modal-dialog
+      .modal-content
+        form(action="/users/messages", method="POST")
+          .modal-header
+            h5.modal-title
+              i.bi.bi-envelope-plus.me-2
+              | Nuevo mensaje
+            button.btn-close(type="button", data-bs-dismiss="modal")
+          .modal-body
+            .mb-3
+              label.form-label Para
+              select.form-control(name="receiverId", id="receiverSelect", required)
+                option(value="") Cargando usuarios...
+            .mb-3
+              label.form-label Asunto
+              input.form-control(type="text", name="subject", placeholder="Asunto del mensaje")
+            .mb-3
+              label.form-label Mensaje
+              textarea.form-control(name="content", rows="4", required, placeholder="Escribe tu mensaje...")
+          .modal-footer
+            button.btn.btn-secondary(type="button", data-bs-dismiss="modal") Cancelar
+            button.btn.btn-primary(type="submit") Enviar
+
+  script.
+    async function loadUsers() {
+      console.log('Cargando usuarios...');
+      try {
+        const response = await fetch('/api/users/search?q=');
+        console.log('Respuesta status:', response.status);
+        const data = await response.json();
+        console.log('Datos recibidos:', data);
+        
+        const select = document.getElementById('receiverSelect');
+        if (select) {
+        
+          select.innerHTML = '<option value="">Seleccionar usuario...</option>';
+          
+          if (data.users && data.users.length > 0) {
+            data.users.forEach(user => {
+              if (user.id != #{currentUser.id}) {
+                const option = document.createElement('option');
+                option.value = user.id;
+                option.textContent = `${user.username} (${user.email})`;
+                select.appendChild(option);
+              }
+            });
+            console.log('Usuarios cargados:', select.options.length - 1);
+          } else {
+            console.log('No hay usuarios disponibles');
+            select.innerHTML = '<option value="">No hay usuarios disponibles</option>';
+          }
+        }
+      } catch (error) {
+        console.error('Error al cargar usuarios:', error);
+        const select = document.getElementById('receiverSelect');
+        if (select) {
+          select.innerHTML = '<option value="">Error al cargar usuarios</option>';
+        }
+      }
+    }
+    
+  
+    const modal = document.getElementById('newMessageModal');
+    if (modal) {
+      modal.addEventListener('show.bs.modal', function () {
+        loadUsers();
+      });
+    }
+    
+   
+    loadUsers();

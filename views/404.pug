@@ -1,0 +1,14 @@
+extends layouts/layout
+
+block content
+  .row.justify-content-center
+    .col-md-6.text-center
+      .card.shadow-sm
+        .card-body
+          i.bi.bi-exclamation-triangle(style="font-size: 80px; color: #ffc107;")
+          h1.mt-3 404
+          h4 Página no encontrada
+          p.text-muted La página que buscas no existe o ha sido movida.
+          a.btn.btn-primary(href="/")
+            i.bi.bi-house.me-1
+            | Volver al inicio

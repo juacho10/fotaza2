@@ -1,0 +1,42 @@
+extends ../layouts/layout
+
+block content
+  .row
+    .col-12
+      .d-flex.justify-content-between.align-items-center.mb-4
+        h2
+          i.bi.bi-person-x.me-2
+          | Usuarios inactivos
+        a.btn.btn-outline-secondary(href="/admin/reports")
+          i.bi.bi-flag.me-1
+          | Ver denuncias
+      
+      if users && users.length
+        .table-responsive
+          table.table.table-hover
+            thead.table-dark
+              tr
+                th ID
+                th Usuario
+                th Email
+                th Publicaciones bajadas
+                th Miembro desde
+                th Acciones
+            tbody
+              each user in users
+                tr
+                  td= user.id
+                  td= user.username
+                  td= user.email
+                  td
+                    span.badge.bg-danger= user.banned_posts_count
+                  td= new Date(user.created_at).toLocaleDateString()
+                  td
+                    form(action=`/admin/users/${user.id}/reactivate`, method="POST", style="display: inline;")
+                      button.btn.btn-sm.btn-success(type="submit", onclick="return confirm('¿Reactivar este usuario?')")
+                        i.bi.bi-person-check.me-1
+                        | Reactivar
+      else
+        .alert.alert-success.text-center
+          i.bi.bi-check-circle.me-2
+          | No hay usuarios inactivos.

@@ -1,0 +1,57 @@
+extends ../layouts/layout
+
+block content
+  .row
+    .col-md-8.offset-md-2
+      .card.shadow-sm
+        .card-header.bg-light
+          h5.mb-0
+            i.bi.bi-search.me-2
+            | Revisar denuncia ##{report.id}
+        .card-body
+          .alert.alert-info
+            strong Denunciante: 
+            | #{report.reporter_username}
+            br
+            strong Motivo: 
+            | #{report.reason}
+            if report.description
+              br
+              strong Descripción: 
+              | #{report.description}
+            br
+            strong Fecha: 
+            | #{new Date(report.created_at).toLocaleString()}
+          
+          hr
+          
+          if post
+            h6 Contenido denunciado:
+            .card.mb-3
+              .card-body
+                h6= post.title
+                p= post.description
+                small.text-muted Autor: #{post.username}
+          
+          if comment
+            h6 Comentario denunciado:
+            .card.mb-3
+              .card-body
+                p= comment.content
+                small.text-muted Autor: #{comment.username}
+          
+          hr
+          
+          .d-flex.justify-content-between
+            a.btn.btn-secondary(href="/admin/reports")
+              i.bi.bi-arrow-left.me-1
+              | Volver
+            div
+              form.d-inline(action=`/admin/reports/${report.id}/dismiss`, method="POST", style="display: inline;")
+                button.btn.btn-warning(type="submit")
+                  i.bi.bi-x-circle.me-1
+                  | Desestimar denuncia
+              form.d-inline(action=`/admin/reports/${report.id}/approve`, method="POST", style="display: inline; margin-left: 10px;")
+                button.btn.btn-danger(type="submit", onclick="return confirm('¿Dar de baja este contenido?')")
+                  i.bi.bi-trash.me-1
+                  | Dar de baja

@@ -1,0 +1,88 @@
+extends ../layouts/layout
+
+block content
+  .row.justify-content-center
+    .col-md-8.col-lg-7
+      .card.shadow
+        .card-header.bg-primary.text-white
+          h4.mb-0
+            i.bi.bi-plus-circle.me-2
+            | Crear nueva publicación
+        .card-body
+          if error
+            .alert.alert-danger= error
+          
+          form(method="POST", action="/posts", enctype="multipart/form-data")
+            .mb-3
+              label.form-label(for="title") Título *
+              input.form-control(type="text", name="title", id="title", required, placeholder="Un título descriptivo")
+            
+            .mb-3
+              label.form-label(for="description") Descripción
+              textarea.form-control(name="description", id="description", rows="4", placeholder="Describe tu publicación...")
+            
+            .mb-3
+              label.form-label(for="tags") Etiquetas
+              input.form-control(type="text", name="tags", id="tags", placeholder="paisaje, naturaleza, montaña (separadas por comas)")
+              .form-text.text-muted Las etiquetas ayudan a que otros encuentren tu contenido
+            
+            .mb-3
+              label.form-label(for="images") Imágenes *
+              input.form-control(type="file", name="images", id="images", accept="image/*", multiple, required)
+              .form-text.text-muted Puedes seleccionar hasta 10 imágenes (máx. 5MB cada una)
+              #imagePreview.mt-2.d-flex.flex-wrap
+            
+            .mb-3
+              label.form-label(for="license") Licencia *
+              select.form-control(name="license", id="licenseSelect", required)
+                option(value="free") Sin copyright (libre para uso)
+                option(value="copyright") Copyright (con marca de agua)
+            
+            .mb-3(id="watermarkGroup", style="display: none;")
+              label.form-label(for="watermark") Texto para marca de agua
+              input.form-control(type="text", name="watermark", id="watermark", placeholder="Ej: © MiNombre - fotaza2.com")
+              .form-text.text-muted Este texto aparecerá en la esquina inferior derecha de la imagen
+            
+            hr
+            .d-flex.justify-content-between
+              a.btn.btn-secondary(href="/")
+                i.bi.bi-arrow-left.me-1
+                | Cancelar
+              button.btn.btn-primary(type="submit")
+                i.bi.bi-cloud-upload.me-1
+                | Publicar
+
+  script.
+    const licenseSelect = document.getElementById('licenseSelect');
+    const watermarkGroup = document.getElementById('watermarkGroup');
+    
+    if (licenseSelect && watermarkGroup) {
+      licenseSelect.addEventListener('change', function() {
+        watermarkGroup.style.display = this.value === 'copyright' ? 'block' : 'none';
+      });
+    }
+    
+    const imagesInput = document.getElementById('images');
+    if (imagesInput) {
+      imagesInput.addEventListener('change', function(e) {
+        const preview = document.getElementById('imagePreview');
+        if (preview) {
+          preview.innerHTML = '';
+          const files = Array.from(this.files);
+          files.forEach(file => {
+            const reader = new FileReader();
+            reader.onload = function(e) {
+              const img = document.createElement('img');
+              img.src = e.target.result;
+              img.style.width = '80px';
+              img.style.height = '80px';
+              img.style.objectFit = 'cover';
+              img.style.margin = '5px';
+              img.style.borderRadius = '4px';
+              preview.appendChild(img);
+            };
+            reader.readAsDataURL(file);
+          });
+        }
+      });
+    }

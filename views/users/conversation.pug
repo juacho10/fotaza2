@@ -1,0 +1,48 @@
+extends ../layouts/layout
+
+block content
+  .row
+    .col-md-8.offset-md-2
+      .card.shadow-sm
+        .card-header.bg-light
+          .d-flex.justify-content-between.align-items-center
+            h5.mb-0
+              i.bi.bi-chat-dots.me-2
+              | Conversación con #{otherUser ? otherUser.username : 'Usuario'}
+            a.btn.btn-sm.btn-outline-secondary(href="/users/messages")
+              i.bi.bi-arrow-left.me-1
+              | Volver
+        .card-body
+          .conversation-container.mb-4(style="max-height: 500px; overflow-y: auto;")
+            if messages && messages.length > 0
+              each message in messages
+                .message-bubble(class=message.sender_id === currentUser.id ? 'sent' : 'received')
+                  .message-content
+                    = message.content
+                  .message-info
+                    small
+                      i.bi.bi-clock.me-1
+                      | #{message.created_at ? new Date(message.created_at).toLocaleString() : 'Reciente'}
+            else
+              p.text-muted.text-center No hay mensajes aún. ¡Envía el primero!
+          
+          hr
+          
+          form(action="/users/messages", method="POST")
+            input(type="hidden", name="receiverId", value=otherUser ? otherUser.id : '')
+            .mb-3
+              label.form-label Asunto
+              input.form-control(type="text", name="subject", placeholder="Asunto del mensaje")
+            .mb-3
+              label.form-label Mensaje
+              textarea.form-control(name="content", rows="3", required, placeholder="Escribe tu mensaje...")
+            button.btn.btn-primary(type="submit")
+              i.bi.bi-send.me-1
+              | Enviar mensaje
+
+block scripts
+  script.
+    const container = document.querySelector('.conversation-container');
+    if (container) {
+      container.scrollTop = container.scrollHeight;
+    }

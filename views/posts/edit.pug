@@ -1,0 +1,40 @@
+extends ../layouts/layout
+
+block content
+  .row.justify-content-center
+    .col-md-8.col-lg-7
+      .card.shadow
+        .card-header.bg-warning.text-dark
+          h4.mb-0
+            i.bi.bi-pencil.me-2
+            | Editar publicación
+        .card-body
+          if error
+            .alert.alert-danger= error
+          
+          form(method="POST", action=`/posts/${post.id}?_method=PUT`)
+            .mb-3
+              label.form-label(for="title") Título *
+              input.form-control(type="text", name="title", id="title", value=post.title, required)
+            
+            .mb-3
+              label.form-label(for="description") Descripción
+              textarea.form-control(name="description", id="description", rows="4")= post.description
+            
+            .mb-3
+              label.form-label(for="tags") Etiquetas
+              input.form-control(type="text", name="tags", id="tags", value=post.tags, placeholder="paisaje, naturaleza")
+            
+            .mb-3
+              .form-check
+                input.form-check-input(type="checkbox", name="comments_open", id="comments_open", checked=post.comments_open)
+                label.form-check-label(for="comments_open") Comentarios abiertos
+            
+            hr
+            .d-flex.justify-content-between
+              a.btn.btn-secondary(href=`/posts/${post.id}`)
+                i.bi.bi-arrow-left.me-1
+                | Cancelar
+              button.btn.btn-warning(type="submit")
+                i.bi.bi-save.me-1
+                | Guardar cambios

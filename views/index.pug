@@ -1,0 +1,39 @@
+extends layouts/layout
+
+block content
+  .row
+    .col-12
+      h1.mb-4 
+        i.bi.bi-images.me-2
+        | Descubre las mejores fotografías
+    
+    if posts && posts.length
+      .row
+        each post in posts
+          .col-md-4.col-lg-3.mb-4
+            .card.h-100.shadow-sm
+              .card-body
+                h5.card-title= post.title
+                p.card-text.text-muted.small
+                  i.bi.bi-person.me-1
+                  a.text-decoration-none(href=`/users/${post.user_id}`)= post.username
+                if post.description
+                  p.card-text.small= post.description.substring(0, 100) + (post.description.length > 100 ? '...' : '')
+                .d-flex.justify-content-between.align-items-center.mt-2
+                  .rating
+                    - var avg = post.avg_rating || 0
+                    - var fullStars = Math.floor(avg)
+                    - for(var i = 0; i < fullStars; i++)
+                      i.bi.bi-star-fill.text-warning
+                    - for(var i = fullStars; i < 5; i++)
+                      i.bi.bi-star.text-secondary
+                    span.ms-1.small.text-muted (#{post.rating_count || 0})
+                  a.btn.btn-sm.btn-outline-primary(href=`/posts/${post.id}`) Ver más
+    else
+      .alert.alert-info.text-center
+        i.bi.bi-info-circle.me-2
+        | No hay publicaciones todavía. 
+        if currentUser
+          a(href="/posts/create") ¡Sé el primero en publicar!
+        else
+          a(href="/register") Regístrate para comenzar a compartir

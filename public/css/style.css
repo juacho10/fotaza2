@@ -1,0 +1,194 @@
+/* Estilos generales */
+body {
+    background-color: #f8f9fa;
+    font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+}
+
+/* Valoraciones de estrellas */
+.rating {
+    display: inline-flex;
+    align-items: center;
+    gap: 2px;
+}
+
+.rating i {
+    font-size: 0.9rem;
+}
+
+/* Input de valoración en modal */
+.rating-input .stars {
+    direction: rtl;
+    display: inline-flex;
+    gap: 8px;
+}
+
+.rating-input input {
+    display: none;
+}
+
+.rating-input label {
+    font-size: 2rem;
+    color: #ddd;
+    cursor: pointer;
+    transition: color 0.2s;
+}
+
+.rating-input input:checked ~ label,
+.rating-input label:hover,
+.rating-input label:hover ~ label {
+    color: #ffc107;
+}
+
+/* Galería de imágenes */
+.image-card {
+    background: #fff;
+    border-radius: 8px;
+    overflow: hidden;
+    box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+    margin-bottom: 1rem;
+}
+
+.image-info {
+    padding: 0.75rem;
+    background: #f8f9fa;
+    border-top: 1px solid #e9ecef;
+}
+
+/* Comentarios */
+.comment {
+    transition: background-color 0.2s;
+}
+
+.comment:hover {
+    background-color: #f8f9fa;
+}
+
+/* Notificaciones */
+.notification-item {
+    transition: background-color 0.2s;
+    cursor: pointer;
+}
+
+.notification-item.unread {
+    background-color: #e3f2fd;
+    border-left: 4px solid #0d6efd;
+}
+
+.notification-item:hover {
+    background-color: #f1f1f1;
+}
+
+/* Colecciones */
+.collection-card {
+    transition: transform 0.2s, box-shadow 0.2s;
+}
+
+.collection-card:hover {
+    transform: translateY(-5px);
+    box-shadow: 0 8px 20px rgba(0,0,0,0.1);
+}
+
+/* Tarjetas de publicaciones */
+.card {
+    transition: transform 0.2s, box-shadow 0.2s;
+}
+
+.card:hover {
+    transform: translateY(-3px);
+    box-shadow: 0 8px 20px rgba(0,0,0,0.1);
+}
+
+/* Badge de notificaciones */
+#unread-badge {
+    font-size: 0.7rem;
+    padding: 0.2rem 0.4rem;
+}
+
+/* Mensajes */
+.message-item {
+    padding: 1rem;
+    border-bottom: 1px solid #e9ecef;
+}
+
+.message-item.unread {
+    background-color: #e3f2fd;
+    font-weight: 500;
+}
+
+/* Burbujas de conversación */
+.conversation-container {
+    background-color: #f8f9fa;
+    border-radius: 8px;
+}
+
+.message-bubble {
+    max-width: 70%;
+    margin-bottom: 1rem;
+}
+
+.message-bubble.sent {
+    margin-left: auto;
+}
+
+.message-bubble.sent .message-content {
+    background-color: #0d6efd;
+    color: white;
+    border-radius: 18px 18px 4px 18px;
+}
+
+.message-bubble.received .message-content {
+    background-color: #e9ecef;
+    color: #212529;
+    border-radius: 18px 18px 18px 4px;
+}
+
+.message-content {
+    padding: 0.75rem 1rem;
+    word-wrap: break-word;
+}
+
+.message-info {
+    font-size: 0.7rem;
+    margin-top: 0.25rem;
+    padding-left: 0.5rem;
+}
+
+/* Responsive */
+@media (max-width: 768px) {
+    .message-bubble {
+        max-width: 85%;
+    }
+    .rating-input label {
+        font-size: 1.5rem;
+    }
+    h1 {
+        font-size: 1.5rem;
+    }
+}
+
+/* Animaciones */
+@keyframes fadeIn {
+    from {
+        opacity: 0;
+        transform: translateY(10px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+.fade-in {
+    animation: fadeIn 0.3s ease-out;
+}
+
+/* Preview de imágenes */
+#imagePreview img {
+    border: 2px solid #ddd;
+    transition: transform 0.2s;
+}
+
+#imagePreview img:hover {
+    transform: scale(1.05);
+    border-color: #0d6efd;
+}
