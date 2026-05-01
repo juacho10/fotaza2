@@ -1,6 +1,7 @@
 const Post = require('../models/Post');
 const Image = require('../models/Image');
 const Comment = require('../models/Comment');
+const Notification = require('../models/Notification');
 const multer = require('multer');
 const path = require('path');
 const fs = require('fs');
@@ -21,22 +22,32 @@ const storage = multer.diskStorage({
     }
 });
 
+const fileFilter = (req, file, cb) => {
+    const allowedImages = /jpeg|jpg|png|gif|webp/;
+    const allowedVideos = /mp4|webm|ogg/;
+    const extname = path.extname(file.originalname).toLowerCase();
+    const mimetype = file.mimetype;
+    
+    if (allowedImages.test(extname) && allowedImages.test(mimetype)) {
+        req.fileType = 'image';
+        cb(null, true);
+    } else if (allowedVideos.test(extname) && allowedVideos.test(mimetype)) {
+        req.fileType = 'video';
+        cb(null, true);
+    } else {
+        cb(new Error('Solo se permiten imágenes (jpg, png, gif, webp) o videos (mp4, webm, ogg)'));
+    }
+};
+
 const upload = multer({ 
     storage: storage,
-    limits: { fileSize: 5 * 1024 * 1024 },
-    fileFilter: (req, file, cb) => {
-        const allowedTypes = /jpeg|jpg|png|gif|webp/;
-        const extname = allowedTypes.test(path.extname(file.originalname).toLowerCase());
-        const mimetype = allowedTypes.test(file.mimetype);
-        if (extname && mimetype) {
-            return cb(null, true);
-        }
-        cb(new Error('Solo se permiten imágenes'));
-    }
-}).array('images', 10);
+    limits: { fileSize: 50 * 1024 * 1024 }, // 50MB para videos
+    fileFilter: fileFilter
+}).array('media', 10);
 
 exports.showCreate = (req, res) => {
-    res.render('posts/create', { title: 'Crear publicación' });
+    const genres = ['paisaje', 'naturaleza', 'urbano', 'retrato', 'abstracto', 'deporte', 'animales', 'comida', 'moda', 'tecnología', 'otro'];
+    res.render('posts/create', { title: 'Crear publicación', genres });
 };
 
 exports.create = async (req, res) => {
@@ -44,17 +55,19 @@ exports.create = async (req, res) => {
         if (err) {
             return res.render('posts/create', { 
                 title: 'Crear publicación', 
-                error: 'Error al subir las imágenes: ' + err.message 
+                error: 'Error al subir los archivos: ' + err.message,
+                genres: ['paisaje', 'naturaleza', 'urbano', 'retrato', 'abstracto', 'deporte', 'animales', 'comida', 'moda', 'tecnología', 'otro']
             });
         }
         
-        const { title, description, tags, license, watermark } = req.body;
-        const images = req.files;
+        const { title, description, genre, tags, license, watermark } = req.body;
+        const files = req.files;
         
-        if (!images || images.length === 0) {
+        if (!files || files.length === 0) {
             return res.render('posts/create', { 
                 title: 'Crear publicación', 
-                error: 'Debes subir al menos una imagen' 
+                error: 'Debes subir al menos una imagen o video',
+                genres: ['paisaje', 'naturaleza', 'urbano', 'retrato', 'abstracto', 'deporte', 'animales', 'comida', 'moda', 'tecnología', 'otro']
             });
         }
         
@@ -62,29 +75,30 @@ exports.create = async (req, res) => {
             const postId = await Post.create({ 
                 title, 
                 description, 
+                genre: genre || null,
                 tags, 
                 user_id: req.session.userId 
             });
             
             const post = await Post.findById(postId);
             
-            for (const image of images) {
-                let finalPath = `/uploads/${image.filename}`;
-                let finalFilePath = image.path;
+            for (const file of files) {
+                let finalPath = `/uploads/${file.filename}`;
+                let finalFilePath = file.path;
                 
-                if (license && license.toString() === 'copyright' && watermark && watermark.trim()) {
-                    const watermarkFilename = image.filename.replace(/\.\w+$/, '_wm$&');
+                if (req.fileType === 'image' && license && license.toString() === 'copyright' && watermark && watermark.trim()) {
+                    const watermarkFilename = file.filename.replace(/\.\w+$/, '_wm$&');
                     const watermarkPath = path.join(uploadDir, watermarkFilename);
                     
                     try {
-                        await sharp(image.path)
+                        await sharp(file.path)
                             .composite([{
                                 input: Buffer.from(
-                                    `<svg width="300" height="150">
-                                        <text x="10" y="140" fill="rgba(0,0,0,0.6)" 
-                                              font-size="20" font-family="Arial">${watermark}</text>
-                                        <text x="8" y="138" fill="rgba(255,255,255,0.8)" 
-                                              font-size="20" font-family="Arial">${watermark}</text>
+                                    `<svg width="400" height="200">
+                                        <text x="10" y="190" fill="rgba(0,0,0,0.7)" 
+                                              font-size="24" font-family="Arial" font-weight="bold">${watermark}</text>
+                                        <text x="8" y="188" fill="rgba(255,255,255,0.9)" 
+                                              font-size="24" font-family="Arial" font-weight="bold">${watermark}</text>
                                      </svg>`
                                 ),
                                 gravity: 'southeast'
@@ -93,28 +107,33 @@ exports.create = async (req, res) => {
                         
                         finalPath = `/uploads/${watermarkFilename}`;
                         finalFilePath = watermarkPath;
-                        fs.unlinkSync(image.path);
+                        fs.unlinkSync(file.path);
                     } catch (sharpError) {
                         console.error('Error al aplicar marca de agua:', sharpError);
                     }
+                    
+                    await post.addImage(finalPath, license, watermark);
+                } else if (req.fileType === 'image') {
+                    await post.addImage(finalPath, license || 'free', null);
+                } else if (req.fileType === 'video') {
+                    await post.addVideo(finalPath, null, 0);
                 }
-                
-                await post.addImage(finalPath, license || 'free', watermark || null);
             }
             
             res.redirect(`/posts/${postId}`);
         } catch (error) {
             console.error(error);
-            if (images) {
-                images.forEach(image => {
-                    if (fs.existsSync(image.path)) {
-                        fs.unlinkSync(image.path);
+            if (files) {
+                files.forEach(file => {
+                    if (fs.existsSync(file.path)) {
+                        fs.unlinkSync(file.path);
                     }
                 });
             }
             res.render('posts/create', { 
                 title: 'Crear publicación', 
-                error: 'Error al crear la publicación: ' + error.message 
+                error: 'Error al crear la publicación: ' + error.message,
+                genres: ['paisaje', 'naturaleza', 'urbano', 'retrato', 'abstracto', 'deporte', 'animales', 'comida', 'moda', 'tecnología', 'otro']
             });
         }
     });
@@ -128,6 +147,7 @@ exports.show = async (req, res) => {
         }
         
         const images = await post.getImages();
+        const videos = await post.getVideos();
         const comments = await post.getComments();
         const userRating = req.session.userId ? 
             await Image.getUserRatingForPost(req.session.userId, post.id) : null;
@@ -139,6 +159,7 @@ exports.show = async (req, res) => {
             title: post.title, 
             post, 
             images, 
+            videos,
             comments,
             userRating,
             hasInterest,
@@ -171,7 +192,8 @@ exports.edit = async (req, res) => {
         }
         
         const images = await post.getImages();
-        res.render('posts/edit', { title: 'Editar publicación', post, images });
+        const genres = ['paisaje', 'naturaleza', 'urbano', 'retrato', 'abstracto', 'deporte', 'animales', 'comida', 'moda', 'tecnología', 'otro'];
+        res.render('posts/edit', { title: 'Editar publicación', post, images, genres });
     } catch (error) {
         console.error(error);
         res.status(500).render('500', { title: 'Error del servidor' });
@@ -189,8 +211,8 @@ exports.update = async (req, res) => {
             return res.status(400).json({ error: 'Esta publicación ha sido denunciada y no puede ser modificada' });
         }
         
-        const { title, description, tags, comments_open } = req.body;
-        await post.update({ title, description, tags, comments_open });
+        const { title, description, genre, tags, comments_open } = req.body;
+        await post.update({ title, description, genre, tags, comments_open });
         
         res.redirect(`/posts/${post.id}`);
     } catch (error) {
@@ -303,13 +325,29 @@ exports.rateImage = async (req, res) => {
 
 exports.markInterest = async (req, res) => {
     try {
-        const image = await Image.findById(req.params.imageId);
-        if (!image) {
-            return res.status(404).json({ error: 'Imagen no encontrada' });
+        const { imageId, postId } = req.body;
+        let targetPostId = postId;
+        let targetImageId = imageId || null;
+        
+        if (imageId) {
+            const image = await Image.findById(imageId);
+            if (!image) {
+                return res.status(404).json({ error: 'Imagen no encontrada' });
+            }
+            targetPostId = image.post_id;
         }
         
-        await image.markInterest(req.session.userId);
-        res.json({ success: true });
+        const post = await Post.findById(targetPostId);
+        if (!post) {
+            return res.status(404).json({ error: 'Publicación no encontrada' });
+        }
+        
+        await post.markInterest(req.session.userId, targetImageId);
+        
+        res.json({ 
+            success: true, 
+            message: 'Interés registrado. El autor ha sido notificado y puede contactarte.' 
+        });
     } catch (error) {
         console.error(error);
         res.status(400).json({ error: error.message || 'Error al marcar interés' });
@@ -361,5 +399,18 @@ exports.reportComment = async (req, res) => {
     } catch (error) {
         console.error(error);
         res.status(500).json({ error: 'Error al denunciar' });
+    }
+};
+
+exports.myReportedComments = async (req, res) => {
+    try {
+        const reportedComments = await Comment.findReportedByUser(req.session.userId);
+        res.render('users/reported-comments', {
+            title: 'Mis comentarios denunciados',
+            reportedComments
+        });
+    } catch (error) {
+        console.error(error);
+        res.status(500).render('500', { title: 'Error del servidor' });
     }
 };

@@ -5,6 +5,7 @@ class Post {
         this.id = data.id;
         this.title = data.title;
         this.description = data.description;
+        this.genre = data.genre;
         this.tags = data.tags;
         this.user_id = data.user_id;
         this.username = data.username;
@@ -14,21 +15,19 @@ class Post {
         this.report_count = data.report_count || 0;
         this.created_at = data.created_at;
         this.deleted_at = data.deleted_at;
-        this.avg_rating = data.avg_rating || 0;
+        this.avg_rating = parseFloat(data.avg_rating) || 0;
         this.rating_count = data.rating_count || 0;
     }
 
-    // Crear publicación
     static async create(postData) {
-        const { title, description, tags, user_id } = postData;
+        const { title, description, genre, tags, user_id } = postData;
         const [result] = await pool.query(
-            'INSERT INTO posts (title, description, tags, user_id) VALUES (?, ?, ?, ?)',
-            [title, description, tags, user_id]
+            'INSERT INTO posts (title, description, genre, tags, user_id) VALUES (?, ?, ?, ?, ?)',
+            [title, description, genre || null, tags, user_id]
         );
         return result.insertId;
     }
 
-    // Buscar por ID
     static async findById(id) {
         const [rows] = await pool.query(`
             SELECT p.*, u.username
@@ -40,13 +39,14 @@ class Post {
         return new Post(rows[0]);
     }
 
-    // Obtener publicaciones para el home (balance: 70% mejor valoradas, 30% recientes)
     static async findAllHome(limit = 20, offset = 0) {
+        // Balance: 70% mejor valoradas (con mínimo 3 votos), 30% recientes
         const [bestRated] = await pool.query(`
             SELECT p.*, u.username
             FROM posts p
             JOIN users u ON p.user_id = u.id
             WHERE p.deleted_at IS NULL AND p.is_banned = FALSE
+              AND p.rating_count >= 3
             ORDER BY p.avg_rating DESC, p.rating_count DESC
             LIMIT ?
         `, [Math.floor(limit * 0.7)]);
@@ -60,10 +60,19 @@ class Post {
             LIMIT ?
         `, [limit - Math.floor(limit * 0.7)]);
         
-        return [...bestRated, ...recent];
+        // Combinar y eliminar duplicados
+        const all = [...bestRated, ...recent];
+        const unique = [];
+        const ids = new Set();
+        for (const post of all) {
+            if (!ids.has(post.id)) {
+                ids.add(post.id);
+                unique.push(post);
+            }
+        }
+        return unique.map(row => new Post(row));
     }
 
-    // Buscar publicaciones por usuario
     static async findByUser(userId) {
         const [rows] = await pool.query(`
             SELECT p.*, u.username
@@ -75,7 +84,6 @@ class Post {
         return rows.map(row => new Post(row));
     }
 
-    // Buscar publicaciones por lista de usuarios (para feed)
     static async findByUsers(userIds) {
         if (!userIds || userIds.length === 0) return [];
         const placeholders = userIds.map(() => '?').join(',');
@@ -91,7 +99,6 @@ class Post {
         return rows.map(row => new Post(row));
     }
 
-    // Buscar publicaciones (motor de búsqueda)
     static async search(filters, limit = 20, offset = 0) {
         let sql = `
             SELECT p.*, u.username
@@ -115,6 +122,11 @@ class Post {
         if (filters.tag) {
             sql += ` AND p.tags LIKE ?`;
             params.push(`%${filters.tag}%`);
+        }
+        
+        if (filters.genre) {
+            sql += ` AND p.genre = ?`;
+            params.push(filters.genre);
         }
         
         sql += ` ORDER BY p.created_at DESC LIMIT ? OFFSET ?`;
@@ -144,6 +156,10 @@ class Post {
             countSql += ` AND p.tags LIKE ?`;
             countParams.push(`%${filters.tag}%`);
         }
+        if (filters.genre) {
+            countSql += ` AND p.genre = ?`;
+            countParams.push(filters.genre);
+        }
         
         const [countRows] = await pool.query(countSql, countParams);
         
@@ -153,51 +169,39 @@ class Post {
         };
     }
 
-    // Actualizar publicación
     async update(data) {
         if (this.is_reported) {
             throw new Error('Esta publicación ha sido denunciada y no puede ser modificada');
         }
         
-        const { title, description, tags, comments_open } = data;
+        const { title, description, genre, tags, comments_open } = data;
         await pool.query(
-            'UPDATE posts SET title = ?, description = ?, tags = ?, comments_open = ? WHERE id = ?',
-            [title, description, tags, comments_open !== undefined ? comments_open : this.comments_open, this.id]
+            'UPDATE posts SET title = ?, description = ?, genre = ?, tags = ?, comments_open = ? WHERE id = ?',
+            [title || this.title, description || this.description, genre || this.genre, tags || this.tags, 
+             comments_open !== undefined ? comments_open : this.comments_open, this.id]
         );
         if (title) this.title = title;
         if (description) this.description = description;
+        if (genre) this.genre = genre;
         if (tags) this.tags = tags;
         if (comments_open !== undefined) this.comments_open = comments_open;
     }
 
-    // Borrado lógico
     async softDelete() {
-        await pool.query(
-            'UPDATE posts SET deleted_at = NOW() WHERE id = ?',
-            [this.id]
-        );
+        await pool.query('UPDATE posts SET deleted_at = NOW() WHERE id = ?', [this.id]);
         this.deleted_at = new Date();
     }
 
-    // Banear publicación
     async ban() {
-        await pool.query(
-            'UPDATE posts SET is_banned = TRUE WHERE id = ?',
-            [this.id]
-        );
+        await pool.query('UPDATE posts SET is_banned = TRUE WHERE id = ?', [this.id]);
         this.is_banned = true;
     }
 
-    // Abrir/cerrar comentarios
     async toggleComments() {
-        await pool.query(
-            'UPDATE posts SET comments_open = NOT comments_open WHERE id = ?',
-            [this.id]
-        );
+        await pool.query('UPDATE posts SET comments_open = NOT comments_open WHERE id = ?', [this.id]);
         this.comments_open = !this.comments_open;
     }
 
-    // Agregar imagen a la publicación
     async addImage(filePath, license, watermarkText = null) {
         const [result] = await pool.query(
             'INSERT INTO images (post_id, file_path, license, watermark_text) VALUES (?, ?, ?, ?)',
@@ -206,14 +210,25 @@ class Post {
         return result.insertId;
     }
 
-    // Obtener imágenes de la publicación
+    async addVideo(filePath, thumbnailPath = null, duration = 0) {
+        const [result] = await pool.query(
+            'INSERT INTO videos (post_id, file_path, thumbnail_path, duration) VALUES (?, ?, ?, ?)',
+            [this.id, filePath, thumbnailPath, duration]
+        );
+        return result.insertId;
+    }
+
     async getImages() {
         const [rows] = await pool.query('SELECT * FROM images WHERE post_id = ?', [this.id]);
         const Image = require('./Image');
         return rows.map(row => new Image(row));
     }
 
-    // Agregar comentario
+    async getVideos() {
+        const [rows] = await pool.query('SELECT * FROM videos WHERE post_id = ?', [this.id]);
+        return rows;
+    }
+
     async addComment(userId, content) {
         const [result] = await pool.query(
             'INSERT INTO comments (user_id, post_id, content) VALUES (?, ?, ?)',
@@ -221,52 +236,40 @@ class Post {
         );
         
         const Notification = require('./Notification');
-        await Notification.create(
-            this.user_id,
-            'comment',
-            userId,
-            null,
-            this.id
-        );
+        await Notification.create(this.user_id, 'comment', userId, null, this.id);
         
         return result.insertId;
     }
 
-    // Obtener comentarios
     async getComments() {
         const Comment = require('./Comment');
         return await Comment.findByPost(this.id);
     }
 
-    // Verificar si el usuario ya marcó interés
-    async hasInterest(userId) {
-        const [rows] = await pool.query(
-            'SELECT 1 FROM interests WHERE user_id = ? AND post_id = ?',
-            [userId, this.id]
-        );
+    async hasInterest(userId, imageId = null) {
+        let query = 'SELECT 1 FROM interests WHERE user_id = ? AND post_id = ?';
+        const params = [userId, this.id];
+        if (imageId) {
+            query += ' AND image_id = ?';
+            params.push(imageId);
+        }
+        const [rows] = await pool.query(query, params);
         return rows.length > 0;
     }
 
-    // Marcar interés ("me interesa")
-    async markInterest(userId) {
+    async markInterest(userId, imageId = null) {
         if (this.user_id === userId) {
             throw new Error('No puedes marcar interés en tu propia publicación');
         }
         
         try {
             await pool.query(
-                'INSERT INTO interests (user_id, post_id) VALUES (?, ?)',
-                [userId, this.id]
+                'INSERT INTO interests (user_id, post_id, image_id) VALUES (?, ?, ?)',
+                [userId, this.id, imageId]
             );
             
             const Notification = require('./Notification');
-            await Notification.create(
-                this.user_id,
-                'interest',
-                userId,
-                null,
-                this.id
-            );
+            await Notification.create(this.user_id, 'interest', userId, imageId, this.id);
             
             return true;
         } catch (error) {
@@ -277,15 +280,11 @@ class Post {
         }
     }
 
-    // Denunciar publicación
     async report(userId, reason, description) {
         const Report = require('./Report');
         await Report.create(userId, this.id, null, reason, description);
         
-        await pool.query(
-            'UPDATE posts SET report_count = report_count + 1 WHERE id = ?',
-            [this.id]
-        );
+        await pool.query('UPDATE posts SET report_count = report_count + 1 WHERE id = ?', [this.id]);
         this.report_count++;
         
         const [rows] = await pool.query(
@@ -294,20 +293,13 @@ class Post {
         );
         
         if (rows[0].count >= 3) {
-            await pool.query(
-                'UPDATE posts SET is_reported = TRUE WHERE id = ?',
-                [this.id]
-            );
+            await pool.query('UPDATE posts SET is_reported = TRUE WHERE id = ?', [this.id]);
             this.is_reported = true;
         }
     }
 
-    // Obtener cantidad de denuncias
     async getReportCount() {
-        const [rows] = await pool.query(
-            'SELECT COUNT(DISTINCT user_id) as count FROM reports WHERE post_id = ?',
-            [this.id]
-        );
+        const [rows] = await pool.query('SELECT COUNT(DISTINCT user_id) as count FROM reports WHERE post_id = ?', [this.id]);
         return rows[0].count;
     }
 }

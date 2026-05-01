@@ -6,7 +6,7 @@ const User = require('../models/User');
 const Notification = require('../models/Notification');
 const pool = require('../config/db');
 
-// Buscar usuarios (para el selector de mensajes)
+// ========== ENDPOINT /users/search (PARA EL SELECTOR DE MENSAJES) ==========
 router.get('/users/search', isAuthenticated, async (req, res) => {
     console.log('📌 API BUSCAR USUARIOS - Query:', req.query.q);
     try {
@@ -36,6 +36,7 @@ router.get('/users/search', isAuthenticated, async (req, res) => {
     }
 });
 
+// ========== ENDPOINT PARA OBTENER PUBLICACIONES DE UNA COLECCIÓN ==========
 router.get('/collections/:id/posts', isAuthenticated, async (req, res) => {
     try {
         const collection = await Collection.findById(req.params.id);
@@ -52,6 +53,7 @@ router.get('/collections/:id/posts', isAuthenticated, async (req, res) => {
     }
 });
 
+// ========== ENDPOINT PARA CONTADOR DE NOTIFICACIONES NO LEÍDAS ==========
 router.get('/notifications/unread-count', isAuthenticated, async (req, res) => {
     try {
         const count = await Notification.getUnreadCount(req.session.userId);

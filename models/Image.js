@@ -13,20 +13,17 @@ class Image {
         this.created_at = data.created_at;
     }
 
-    // Buscar por ID
     static async findById(id) {
         const [rows] = await pool.query('SELECT * FROM images WHERE id = ?', [id]);
         if (rows.length === 0) return null;
         return new Image(rows[0]);
     }
 
-    // Buscar imágenes por publicación
     static async findByPost(postId) {
         const [rows] = await pool.query('SELECT * FROM images WHERE post_id = ?', [postId]);
         return rows.map(row => new Image(row));
     }
 
-    // Obtener valoración del usuario para una publicación
     static async getUserRatingForPost(userId, postId) {
         const [rows] = await pool.query(`
             SELECT r.value 
@@ -38,34 +35,24 @@ class Image {
         return rows.length > 0 ? rows[0].value : null;
     }
 
-    // Agregar valoración
     async addRating(userId, value) {
-        const [postRows] = await pool.query(
-            'SELECT user_id FROM posts WHERE id = ?',
-            [this.post_id]
-        );
+        const [postRows] = await pool.query('SELECT user_id FROM posts WHERE id = ?', [this.post_id]);
         
         if (postRows[0] && postRows[0].user_id === userId) {
             throw new Error('No puedes valorar tu propia imagen');
         }
         
         try {
-            const [result] = await pool.query(
+            await pool.query(
                 'INSERT INTO ratings (user_id, image_id, value) VALUES (?, ?, ?)',
                 [userId, this.id, value]
             );
             
             await this.updateAverageRating();
             
-            await Notification.create(
-                postRows[0].user_id,
-                'rating',
-                userId,
-                this.id,
-                this.post_id
-            );
+            await Notification.create(postRows[0].user_id, 'rating', userId, this.id, this.post_id);
             
-            return result.insertId;
+            return true;
         } catch (error) {
             if (error.code === 'ER_DUP_ENTRY') {
                 throw new Error('Ya has valorado esta imagen');
@@ -74,12 +61,14 @@ class Image {
         }
     }
 
-    // Actualizar promedio de valoración
     async updateAverageRating() {
-        const [rows] = await pool.query(
-            'SELECT AVG(value) as avg, COUNT(*) as count FROM ratings WHERE image_id = ?',
-            [this.id]
-        );
+        // CORREGIDO: Usar AVG de valoraciones directamente
+        const [rows] = await pool.query(`
+            SELECT AVG(r.value) as avg, COUNT(r.id) as count 
+            FROM ratings r 
+            WHERE r.image_id = ?
+        `, [this.id]);
+        
         const avg = rows[0].avg ? parseFloat(rows[0].avg) : 0;
         const count = rows[0].count || 0;
         
@@ -94,12 +83,13 @@ class Image {
         await this.updatePostAverageRating();
     }
 
-    // Actualizar promedio de la publicación
     async updatePostAverageRating() {
+        // CORREGIDO: Calcular promedio de la publicación desde las valoraciones individuales
         const [rows] = await pool.query(`
-            SELECT AVG(average_rating) as avg, SUM(rating_count) as count 
-            FROM images 
-            WHERE post_id = ?
+            SELECT AVG(r.value) as avg, COUNT(r.id) as count 
+            FROM ratings r 
+            JOIN images i ON r.image_id = i.id 
+            WHERE i.post_id = ?
         `, [this.post_id]);
         
         await pool.query(
@@ -108,32 +98,22 @@ class Image {
         );
     }
 
-    // Marcar interés
     async markInterest(userId) {
-        const [postRows] = await pool.query(
-            'SELECT user_id FROM posts WHERE id = ?',
-            [this.post_id]
-        );
+        const [postRows] = await pool.query('SELECT user_id FROM posts WHERE id = ?', [this.post_id]);
         
         if (postRows[0] && postRows[0].user_id === userId) {
             throw new Error('No puedes marcar interés en tu propia imagen');
         }
         
         try {
-            const [result] = await pool.query(
-                'INSERT INTO interests (user_id, post_id) VALUES (?, ?)',
-                [userId, this.post_id]
+            await pool.query(
+                'INSERT INTO interests (user_id, post_id, image_id) VALUES (?, ?, ?)',
+                [userId, this.post_id, this.id]
             );
             
-            await Notification.create(
-                postRows[0].user_id,
-                'interest',
-                userId,
-                this.id,
-                this.post_id
-            );
+            await Notification.create(postRows[0].user_id, 'interest', userId, this.id, this.post_id);
             
-            return result.insertId;
+            return true;
         } catch (error) {
             if (error.code === 'ER_DUP_ENTRY') {
                 throw new Error('Ya has marcado interés en esta imagen');

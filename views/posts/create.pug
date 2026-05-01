@@ -22,15 +22,22 @@ block content
               textarea.form-control(name="description", id="description", rows="4", placeholder="Describe tu publicación...")
             
             .mb-3
+              label.form-label(for="genre") Género *
+              select.form-control(name="genre", id="genre", required)
+                option(value="") Seleccionar género...
+                each genre in genres
+                  option(value=genre)= genre.charAt(0).toUpperCase() + genre.slice(1)
+            
+            .mb-3
               label.form-label(for="tags") Etiquetas
               input.form-control(type="text", name="tags", id="tags", placeholder="paisaje, naturaleza, montaña (separadas por comas)")
               .form-text.text-muted Las etiquetas ayudan a que otros encuentren tu contenido
             
             .mb-3
-              label.form-label(for="images") Imágenes *
-              input.form-control(type="file", name="images", id="images", accept="image/*", multiple, required)
-              .form-text.text-muted Puedes seleccionar hasta 10 imágenes (máx. 5MB cada una)
-              #imagePreview.mt-2.d-flex.flex-wrap
+              label.form-label(for="media") Imágenes o Videos *
+              input.form-control(type="file", name="media", id="media", accept="image/*,video/*", multiple, required)
+              .form-text.text-muted Puedes subir imágenes (jpg, png, gif, webp) o videos (mp4, webm, ogg). Máx. 10 archivos.
+              #mediaPreview.mt-2.d-flex.flex-wrap
             
             .mb-3
               label.form-label(for="license") Licencia *
@@ -62,26 +69,49 @@ block content
       });
     }
     
-    const imagesInput = document.getElementById('images');
-    if (imagesInput) {
-      imagesInput.addEventListener('change', function(e) {
-        const preview = document.getElementById('imagePreview');
+    const mediaInput = document.getElementById('media');
+    if (mediaInput) {
+      mediaInput.addEventListener('change', function(e) {
+        const preview = document.getElementById('mediaPreview');
         if (preview) {
           preview.innerHTML = '';
           const files = Array.from(this.files);
           files.forEach(file => {
-            const reader = new FileReader();
-            reader.onload = function(e) {
+            const isVideo = file.type.startsWith('video/');
+            const container = document.createElement('div');
+            container.style.width = '100px';
+            container.style.margin = '5px';
+            container.style.position = 'relative';
+            
+            if (isVideo) {
+              const video = document.createElement('video');
+              video.src = URL.createObjectURL(file);
+              video.style.width = '100%';
+              video.style.height = '80px';
+              video.style.objectFit = 'cover';
+              video.style.borderRadius = '4px';
+              container.appendChild(video);
+              
+              const icon = document.createElement('i');
+              icon.className = 'bi bi-play-circle-fill';
+              icon.style.position = 'absolute';
+              icon.style.bottom = '5px';
+              icon.style.right = '5px';
+              icon.style.color = 'white';
+              icon.style.backgroundColor = 'rgba(0,0,0,0.5)';
+              icon.style.borderRadius = '50%';
+              container.appendChild(icon);
+            } else {
               const img = document.createElement('img');
-              img.src = e.target.result;
-              img.style.width = '80px';
+              img.src = URL.createObjectURL(file);
+              img.style.width = '100%';
               img.style.height = '80px';
               img.style.objectFit = 'cover';
-              img.style.margin = '5px';
               img.style.borderRadius = '4px';
-              preview.appendChild(img);
-            };
-            reader.readAsDataURL(file);
+              container.appendChild(img);
+            }
+            
+            preview.appendChild(container);
           });
         }
       });

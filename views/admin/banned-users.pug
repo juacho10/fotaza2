@@ -7,9 +7,13 @@ block content
         h2
           i.bi.bi-person-x.me-2
           | Usuarios inactivos
-        a.btn.btn-outline-secondary(href="/admin/reports")
-          i.bi.bi-flag.me-1
-          | Ver denuncias
+        .btn-group
+          a.btn.btn-outline-warning(href="/admin/reports")
+            i.bi.bi-flag.me-1
+            | Ver denuncias
+          a.btn.btn-outline-secondary(href="/admin/stats")
+            i.bi.bi-graph-up.me-1
+            | Estadísticas
       
       if users && users.length
         .table-responsive
@@ -40,3 +44,8 @@ block content
         .alert.alert-success.text-center
           i.bi.bi-check-circle.me-2
           | No hay usuarios inactivos.
+          br
+          br
+          a.btn.btn-outline-warning(href="/admin/reports")
+            i.bi.bi-flag.me-1
+            | Ver denuncias pendientes

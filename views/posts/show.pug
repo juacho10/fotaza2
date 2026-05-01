@@ -30,6 +30,7 @@ block content
             
             hr
             
+            //- ============ SECCIÓN DE IMÁGENES ============
             if images && images.length > 0
               each image in images
                 .image-card.mb-3
@@ -55,9 +56,21 @@ block content
                         button.btn.btn-sm.btn-outline-success.interest-btn(data-image-id=image.id)
                           i.bi.bi-heart
                           |  Me interesa
-            else
-              .alert.alert-info No hay imágenes disponibles para esta publicación
             
+            //- ============ SECCIÓN DE VIDEOS (NUEVO - AGREGADO AQUÍ) ============
+            if videos && videos.length > 0
+              each video in videos
+                .video-card.mb-3
+                  video.img-fluid.rounded(controls, style="width:100%; max-height:400px;")
+                    source(src=video.file_path, type="video/mp4")
+                    | Tu navegador no soporta videos
+                  .video-info.mt-2
+                    if currentUser && currentUser.id !== post.user_id
+                      button.btn.btn-sm.btn-outline-success.interest-btn-post(data-post-id=post.id)
+                        i.bi.bi-heart
+                        |  Me interesa esta publicación
+            
+            //- ============ SECCIÓN DE COMENTARIOS ============
             .card.shadow-sm.mt-4
               .card-header.bg-light
                 h5.mb-0

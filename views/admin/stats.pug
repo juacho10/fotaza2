@@ -1,0 +1,65 @@
+extends ../layouts/layout
+
+block content
+  .row
+    .col-12
+      .d-flex.justify-content-between.align-items-center.mb-4
+        h2
+          i.bi.bi-graph-up.me-2
+          | Estadísticas del sistema
+        .btn-group
+          a.btn.btn-outline-warning(href="/admin/reports")
+            i.bi.bi-flag.me-1
+            | Ver denuncias
+          a.btn.btn-outline-danger(href="/admin/banned-users")
+            i.bi.bi-person-x.me-1
+            | Usuarios inactivos
+      
+      .row
+        .col-md-3.mb-3
+          .card.bg-primary.text-white.text-center.shadow-sm
+            .card-body
+              i.bi.bi-people(style="font-size: 2.5rem;")
+              h2.display-5.mt-2= stats.users
+              p.mb-0 Usuarios registrados
+              
+        .col-md-3.mb-3
+          .card.bg-success.text-white.text-center.shadow-sm
+            .card-body
+              i.bi.bi-images(style="font-size: 2.5rem;")
+              h2.display-5.mt-2= stats.posts
+              p.mb-0 Publicaciones activas
+              
+        .col-md-3.mb-3
+          .card.bg-warning.text-dark.text-center.shadow-sm
+            .card-body
+              i.bi.bi-flag(style="font-size: 2.5rem;")
+              h2.display-5.mt-2= stats.pendingReports
+              p.mb-0 Denuncias pendientes
+              
+        .col-md-3.mb-3
+          .card.bg-info.text-white.text-center.shadow-sm
+            .card-body
+              i.bi.bi-chat-dots(style="font-size: 2.5rem;")
+              h2.display-5.mt-2= stats.comments
+              p.mb-0 Comentarios enviados
+      
+      .mt-4
+        .card.shadow-sm
+          .card-header.bg-light
+            h5.mb-0
+              i.bi.bi-info-circle.me-2
+              | Información adicional
+          .card-body
+            p.text-muted.mb-0
+              i.bi.bi-database.me-1
+              | Base de datos: MySQL
+              br
+              i.bi.bi-box.me-1
+              | Framework: Express.js
+              br
+              i.bi.bi-filetype-pug.me-1
+              | Motor de plantillas: Pug
+              br
+              i.bi.bi-shield-lock.me-1
+              | Autenticación: Sesiones + JWT

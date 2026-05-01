@@ -12,8 +12,10 @@ const userRoutes = require('./routes/users');
 const searchRoutes = require('./routes/search');
 const adminRoutes = require('./routes/admin');
 const apiRoutes = require('./routes/api');
+const apiAuthRoutes = require('./routes/api-auth');
 
 const { setUserLocals } = require('./middlewares/authMiddleware');
+const { verifyToken } = require('./middlewares/jwtAuth');
 
 const app = express();
 const port = process.env.PORT || 3000;
@@ -38,6 +40,7 @@ app.use(session({
     }
 }));
 
+app.use(verifyToken);
 app.use(setUserLocals);
 
 app.use('/', authRoutes);
@@ -46,6 +49,7 @@ app.use('/users', userRoutes);
 app.use('/search', searchRoutes);
 app.use('/admin', adminRoutes);
 app.use('/api', apiRoutes);
+app.use('/api/auth', apiAuthRoutes);
 
 app.get('/', async (req, res) => {
     try {

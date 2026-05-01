@@ -1,4 +1,5 @@
 const pool = require('../config/db');
+const Notification = require('./Notification');
 
 class Comment {
     constructor(data) {
@@ -13,7 +14,6 @@ class Comment {
         this.username = data.username;
     }
 
-    // Buscar por ID
     static async findById(id) {
         const [rows] = await pool.query(`
             SELECT c.*, u.username 
@@ -25,7 +25,6 @@ class Comment {
         return new Comment(rows[0]);
     }
 
-    // Buscar comentarios por publicación
     static async findByPost(postId) {
         const [rows] = await pool.query(`
             SELECT c.*, u.username 
@@ -37,34 +36,66 @@ class Comment {
         return rows.map(row => new Comment(row));
     }
 
-    // Borrado lógico
+    static async findReportedByUser(userId) {
+        const [rows] = await pool.query(`
+            SELECT cr.*, c.content, c.user_id as comment_author_id, c.post_id,
+                   u.username as reporter_username
+            FROM comment_reports cr
+            JOIN comments c ON cr.comment_id = c.id
+            JOIN users u ON cr.reporter_id = u.id
+            WHERE c.user_id = ? AND cr.status = 'pending'
+            ORDER BY cr.created_at DESC
+        `, [userId]);
+        return rows;
+    }
+
     async softDelete() {
-        await pool.query(
-            'UPDATE comments SET deleted_at = NOW() WHERE id = ?',
-            [this.id]
-        );
+        await pool.query('UPDATE comments SET deleted_at = NOW() WHERE id = ?', [this.id]);
         this.deleted_at = new Date();
     }
 
-    // Banear comentario
     async ban() {
-        await pool.query(
-            'UPDATE comments SET is_banned = TRUE WHERE id = ?',
-            [this.id]
-        );
+        await pool.query('UPDATE comments SET is_banned = TRUE WHERE id = ?', [this.id]);
         this.is_banned = true;
     }
 
-    // Denunciar comentario
     async report(userId, reason, description) {
-        const Report = require('./Report');
-        await Report.create(userId, null, this.id, reason, description);
-        
-        await pool.query(
-            'UPDATE comments SET is_reported = TRUE WHERE id = ?',
-            [this.id]
-        );
-        this.is_reported = true;
+        try {
+            const [result] = await pool.query(
+                `INSERT INTO comment_reports (comment_id, reporter_id, reason, description) 
+                 VALUES (?, ?, ?, ?)`,
+                [this.id, userId, reason, description || null]
+            );
+            
+            await pool.query('UPDATE comments SET is_reported = TRUE WHERE id = ?', [this.id]);
+            this.is_reported = true;
+            
+            // Notificar al autor del comentario
+            await Notification.create(
+                this.user_id,
+                'comment_reported',
+                userId,
+                null,
+                this.post_id,
+                null,
+                this.id
+            );
+            
+            return result.insertId;
+        } catch (error) {
+            console.error('Error al reportar comentario:', error);
+            throw error;
+        }
+    }
+
+    async getReports() {
+        const [rows] = await pool.query(`
+            SELECT cr.*, u.username as reporter_username
+            FROM comment_reports cr
+            JOIN users u ON cr.reporter_id = u.id
+            WHERE cr.comment_id = ? AND cr.status = 'pending'
+        `, [this.id]);
+        return rows;
     }
 }
 

@@ -7,9 +7,13 @@ block content
         h2
           i.bi.bi-flag.me-2
           | Denuncias pendientes
-        a.btn.btn-outline-secondary(href="/admin/stats")
-          i.bi.bi-graph-up.me-1
-          | Estadísticas
+        .btn-group
+          a.btn.btn-outline-secondary(href="/admin/stats")
+            i.bi.bi-graph-up.me-1
+            | Estadísticas
+          a.btn.btn-outline-danger(href="/admin/banned-users")
+            i.bi.bi-person-x.me-1
+            | Usuarios inactivos
       
       if reports && reports.length
         .table-responsive
@@ -19,6 +23,7 @@ block content
                 th ID
                 th Tipo
                 th Denunciante
+                th Contenido
                 th Motivo
                 th Fecha
                 th Acciones
@@ -27,11 +32,16 @@ block content
                 tr
                   td= report.id
                   td
-                    if report.post_id
-                      span.badge.bg-warning Publicación
-                    else
+                    if report.type === 'comment' || report.comment_id
                       span.badge.bg-info Comentario
+                    else
+                      span.badge.bg-warning Publicación
                   td= report.reporter_username
+                  td
+                    if report.comment_content
+                      | #{report.comment_content ? report.comment_content.substring(0, 50) : 'Contenido no disponible'}...
+                    else
+                      | #{report.post_title ? report.post_title.substring(0, 50) : 'Publicación'}...
                   td= report.reason
                   td= new Date(report.created_at).toLocaleDateString()
                   td
@@ -42,3 +52,8 @@ block content
         .alert.alert-success.text-center
           i.bi.bi-check-circle.me-2
           | No hay denuncias pendientes. ¡Todo en orden!
+          br
+          br
+          a.btn.btn-outline-danger(href="/admin/banned-users")
+            i.bi.bi-person-x.me-1
+            | Ver usuarios inactivos
