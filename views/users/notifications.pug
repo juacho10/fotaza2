@@ -8,10 +8,15 @@ block content
           i.bi.bi-bell.me-2
           | Notificaciones
         if unreadCount > 0
-          form(action="/users/notifications/mark-all", method="POST")
+          form.d-inline(action="/users/notifications/mark-all", method="POST")
             button.btn.btn-sm.btn-secondary(type="submit")
               i.bi.bi-envelope-check.me-1
               | Marcar todas como leídas
+      
+      .mb-3.text-end
+        a.btn.btn-sm.btn-outline-warning(href="/users/reported-comments")
+          i.bi.bi-flag.me-1
+          | Mis comentarios denunciados
       
       if notifications && notifications.length > 0
         .list-group

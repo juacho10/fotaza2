@@ -2,23 +2,22 @@ const Post = require('../models/Post');
 const Image = require('../models/Image');
 const Comment = require('../models/Comment');
 const Notification = require('../models/Notification');
+const cloudinary = require('../config/cloudinary');
+const { CloudinaryStorage } = require('multer-storage-cloudinary');
 const multer = require('multer');
 const path = require('path');
-const fs = require('fs');
-const sharp = require('sharp');
 
-const uploadDir = path.join(__dirname, '../public/uploads');
-if (!fs.existsSync(uploadDir)) {
-    fs.mkdirSync(uploadDir, { recursive: true });
-}
 
-const storage = multer.diskStorage({
-    destination: function (req, file, cb) {
-        cb(null, uploadDir);
-    },
-    filename: function (req, file, cb) {
-        const uniqueSuffix = Date.now() + '-' + Math.round(Math.random() * 1E9);
-        cb(null, uniqueSuffix + path.extname(file.originalname));
+// Configurar almacenamiento en Cloudinary
+const storage = new CloudinaryStorage({
+    cloudinary: cloudinary,
+    params: {
+        folder: 'fotaza2',
+        allowed_formats: ['jpg', 'jpeg', 'png', 'gif', 'webp', 'mp4', 'webm', 'ogg'],
+        resource_type: 'auto',
+        transformation: [
+            { quality: 'auto', fetch_format: 'auto' }
+        ]
     }
 });
 
@@ -41,7 +40,7 @@ const fileFilter = (req, file, cb) => {
 
 const upload = multer({ 
     storage: storage,
-    limits: { fileSize: 50 * 1024 * 1024 }, // 50MB para videos
+    limits: { fileSize: 50 * 1024 * 1024 },
     fileFilter: fileFilter
 }).array('media', 10);
 
@@ -53,6 +52,7 @@ exports.showCreate = (req, res) => {
 exports.create = async (req, res) => {
     upload(req, res, async function (err) {
         if (err) {
+            console.error('Error en upload:', err);
             return res.render('posts/create', { 
                 title: 'Crear publicación', 
                 error: 'Error al subir los archivos: ' + err.message,
@@ -83,53 +83,37 @@ exports.create = async (req, res) => {
             const post = await Post.findById(postId);
             
             for (const file of files) {
-                let finalPath = `/uploads/${file.filename}`;
-                let finalFilePath = file.path;
+                let finalUrl = file.path;
+                let publicId = file.filename;
                 
-                if (req.fileType === 'image' && license && license.toString() === 'copyright' && watermark && watermark.trim()) {
-                    const watermarkFilename = file.filename.replace(/\.\w+$/, '_wm$&');
-                    const watermarkPath = path.join(uploadDir, watermarkFilename);
-                    
-                    try {
-                        await sharp(file.path)
-                            .composite([{
-                                input: Buffer.from(
-                                    `<svg width="400" height="200">
-                                        <text x="10" y="190" fill="rgba(0,0,0,0.7)" 
-                                              font-size="24" font-family="Arial" font-weight="bold">${watermark}</text>
-                                        <text x="8" y="188" fill="rgba(255,255,255,0.9)" 
-                                              font-size="24" font-family="Arial" font-weight="bold">${watermark}</text>
-                                     </svg>`
-                                ),
-                                gravity: 'southeast'
-                            }])
-                            .toFile(watermarkPath);
-                        
-                        finalPath = `/uploads/${watermarkFilename}`;
-                        finalFilePath = watermarkPath;
-                        fs.unlinkSync(file.path);
-                    } catch (sharpError) {
-                        console.error('Error al aplicar marca de agua:', sharpError);
-                    }
-                    
-                    await post.addImage(finalPath, license, watermark);
-                } else if (req.fileType === 'image') {
-                    await post.addImage(finalPath, license || 'free', null);
+                // Si es imagen con copyright y tiene marca de agua
+                if (req.fileType === 'image' && license === 'copyright' && watermark && watermark.trim()) {
+                    const watermarkUrl = cloudinary.url(publicId, {
+                        transformation: [
+                            { overlay: {
+                                font_family: "Arial",
+                                font_size: 24,
+                                font_weight: "bold",
+                                text: encodeURIComponent(watermark),
+                                color: "white"
+                            }},
+                            { gravity: "south_east", x: 10, y: 10 },
+                            { flags: "layer_apply" }
+                        ]
+                    });
+                    finalUrl = watermarkUrl;
+                }
+                
+                if (req.fileType === 'image') {
+                    await post.addImage(finalUrl, license || 'free', watermark);
                 } else if (req.fileType === 'video') {
-                    await post.addVideo(finalPath, null, 0);
+                    await post.addVideo(finalUrl, null, 0);
                 }
             }
             
             res.redirect(`/posts/${postId}`);
         } catch (error) {
             console.error(error);
-            if (files) {
-                files.forEach(file => {
-                    if (fs.existsSync(file.path)) {
-                        fs.unlinkSync(file.path);
-                    }
-                });
-            }
             res.render('posts/create', { 
                 title: 'Crear publicación', 
                 error: 'Error al crear la publicación: ' + error.message,
@@ -402,15 +386,36 @@ exports.reportComment = async (req, res) => {
     }
 };
 
+// ========== FUNCIÓN CORREGIDA ==========
 exports.myReportedComments = async (req, res) => {
+    console.log('📌 MY REPORTED COMMENTS - Usuario:', req.session.userId);
     try {
         const reportedComments = await Comment.findReportedByUser(req.session.userId);
+        
+        console.log('   Comentarios encontrados:', reportedComments ? reportedComments.length : 0);
+        
+        const formattedReports = (reportedComments || []).map(report => ({
+            id: report.id,
+            comment_id: report.comment_id || report.id,
+            post_id: report.post_id,
+            content: report.content || 'Contenido no disponible',
+            reason: report.reason || 'No especificado',
+            description: report.description || '',
+            reporter_username: report.reporter_username || 'Usuario desconocido',
+            created_at: report.created_at,
+            status: report.status || 'pending'
+        }));
+        
         res.render('users/reported-comments', {
             title: 'Mis comentarios denunciados',
-            reportedComments
+            reportedComments: formattedReports
         });
     } catch (error) {
-        console.error(error);
-        res.status(500).render('500', { title: 'Error del servidor' });
+        console.error('❌ Error en myReportedComments:', error.message);
+        res.render('users/reported-comments', {
+            title: 'Mis comentarios denunciados',
+            reportedComments: [],
+            error: 'Error al cargar los comentarios denunciados'
+        });
     }
 };

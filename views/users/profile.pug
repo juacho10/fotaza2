@@ -6,7 +6,11 @@ block content
       .card.shadow-sm.text-center
         .card-body
           .avatar.mb-3
-            i.bi.bi-person-circle(style="font-size: 80px;")
+            if profileUser.avatar
+              img.rounded-circle(src=profileUser.avatar, width="120", height="120", style="object-fit: cover; border: 3px solid #0d6efd;")
+            else
+              i.bi.bi-person-circle(style="font-size: 80px; color: #6c757d;")
+          
           if profileUser
             h3= profileUser.username
             p.text-muted
@@ -39,7 +43,7 @@ block content
             
             if currentUser && currentUser.id === profileUser.id
               hr
-              button.btn.btn-outline-secondary.w-100(data-bs-toggle="modal", data-bs-target="#editProfileModal")
+              a.btn.btn-outline-secondary.w-100(href="/users/edit-profile")
                 i.bi.bi-pencil.me-1
                 | Editar perfil
           else
@@ -57,6 +61,8 @@ block content
               each post in posts
                 .col-md-6.mb-3
                   .card.h-100
+                    if post.thumbnail
+                      img.card-img-top(src=post.thumbnail, alt=post.title, style="height: 150px; object-fit: cover;")
                     .card-body
                       h6.card-title= post.title
                       p.card-text.text-muted.small= new Date(post.created_at).toLocaleDateString()
@@ -73,25 +79,6 @@ block content
             p.text-muted.text-center No hay publicaciones aún.
             if isOwnProfile
               a(href="/posts/create") ¡Crea tu primera publicación!
-
-  if currentUser && profileUser && currentUser.id === profileUser.id
-    .modal.fade(tabindex="-1", id="editProfileModal")
-      .modal-dialog
-        .modal-content
-          form(action=`/users/${profileUser.id}/edit`, method="POST")
-            .modal-header
-              h5.modal-title Editar perfil
-              button.btn-close(type="button", data-bs-dismiss="modal")
-            .modal-body
-              .mb-3
-                label.form-label Nombre de usuario
-                input.form-control(type="text", name="username", value=profileUser.username, required)
-              .mb-3
-                label.form-label Email
-                input.form-control(type="email", name="email", value=profileUser.email, required)
-            .modal-footer
-              button.btn.btn-secondary(type="button", data-bs-dismiss="modal") Cancelar
-              button.btn.btn-primary(type="submit") Guardar cambios
 
   script.
     document.querySelectorAll('.follow-btn, .unfollow-btn').forEach(btn => {

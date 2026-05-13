@@ -12,7 +12,7 @@ html(lang="es")
       .container
         a.navbar-brand(href="/")
           i.bi.bi-camera.me-2
-          | Fotaza 2
+          | Fotaza 
         button.navbar-toggler(type="button", data-bs-toggle="collapse", data-bs-target="#navbarNav")
           span.navbar-toggler-icon
         .collapse.navbar-collapse(id="navbarNav")
@@ -69,6 +69,7 @@ html(lang="es")
                     a.dropdown-item(href="/users/messages")
                       i.bi.bi-envelope.me-2
                       | Mensajes
+                      span#message-badge.badge.bg-danger.ms-2(style="display:none") 0
                   li
                     hr.dropdown-divider
                   if isAdmin || isValidator
@@ -119,7 +120,28 @@ html(lang="es")
         }
       }
       
+      async function updateMessageCount() {
+        try {
+          const response = await fetch('/api/messages/unread-count');
+          const data = await response.json();
+          const badge = document.getElementById('message-badge');
+          if (data.count > 0) {
+            badge.textContent = data.count > 99 ? '99+' : data.count;
+            badge.style.display = 'inline-block';
+          } else {
+            badge.style.display = 'none';
+          }
+        } catch (error) {
+          console.error('Error al cargar mensajes:', error);
+        }
+      }
+      
       if (document.getElementById('unread-badge')) {
         updateUnreadCount();
         setInterval(updateUnreadCount, 30000);
+      }
+      
+      if (document.getElementById('message-badge')) {
+        updateMessageCount();
+        setInterval(updateMessageCount, 30000);
       }

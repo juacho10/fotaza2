@@ -14,9 +14,9 @@ block content
       if conversations && conversations.length > 0
         .list-group
           each conv in conversations
-            a.list-group-item.list-group-item-action(href=`/users/messages/${conv.sender_id === currentUser.id ? conv.receiver_id : conv.sender_id}`)
+            .list-group-item
               .d-flex.justify-content-between.align-items-center
-                div
+                a.flex-grow-1.text-decoration-none(href=`/users/messages/${conv.sender_id === currentUser.id ? conv.receiver_id : conv.sender_id}`)
                   strong
                     i.bi.bi-person-circle.me-2
                     | #{conv.sender_id === currentUser.id ? conv.receiver_username : conv.sender_username}
@@ -28,8 +28,11 @@ block content
                   small.text-muted
                     i.bi.bi-clock.me-1
                     | #{new Date(conv.created_at).toLocaleString()}
-                if !conv.is_read && conv.receiver_id === currentUser.id
-                  span.badge.bg-primary Nuevo
+                  if !conv.is_read && conv.receiver_id === currentUser.id
+                    span.badge.bg-primary.ms-2 Nuevo
+                button.btn.btn-sm.btn-danger.delete-conversation-btn(type="button", data-user-id=conv.sender_id === currentUser.id ? conv.receiver_id : conv.sender_id, style="margin-left: 10px;")
+                  i.bi.bi-trash.me-1
+                  | Eliminar conversación
       else
         .alert.alert-info.text-center
           i.bi.bi-envelope-slash.me-2
@@ -62,18 +65,13 @@ block content
 
   script.
     async function loadUsers() {
-      console.log('Cargando usuarios...');
       try {
         const response = await fetch('/api/users/search?q=');
-        console.log('Respuesta status:', response.status);
         const data = await response.json();
-        console.log('Datos recibidos:', data);
-        
         const select = document.getElementById('receiverSelect');
-        if (select) {
         
+        if (select) {
           select.innerHTML = '<option value="">Seleccionar usuario...</option>';
-          
           if (data.users && data.users.length > 0) {
             data.users.forEach(user => {
               if (user.id != #{currentUser.id}) {
@@ -83,28 +81,35 @@ block content
                 select.appendChild(option);
               }
             });
-            console.log('Usuarios cargados:', select.options.length - 1);
           } else {
-            console.log('No hay usuarios disponibles');
             select.innerHTML = '<option value="">No hay usuarios disponibles</option>';
           }
         }
       } catch (error) {
         console.error('Error al cargar usuarios:', error);
-        const select = document.getElementById('receiverSelect');
-        if (select) {
-          select.innerHTML = '<option value="">Error al cargar usuarios</option>';
-        }
       }
     }
     
-  
-    const modal = document.getElementById('newMessageModal');
-    if (modal) {
-      modal.addEventListener('show.bs.modal', function () {
-        loadUsers();
+    // Eliminar conversación completa
+    document.querySelectorAll('.delete-conversation-btn').forEach(btn => {
+      btn.addEventListener('click', async (e) => {
+        e.preventDefault();
+        e.stopPropagation();
+        const userId = btn.dataset.userId;
+        if (confirm('¿Eliminar esta conversación completa? Se eliminarán TODOS los mensajes.')) {
+          try {
+            const response = await fetch(`/users/conversation/${userId}`, { method: 'DELETE' });
+            if (response.ok) {
+              btn.closest('.list-group-item').remove();
+              alert('Conversación eliminada');
+            } else {
+              alert('Error al eliminar conversación');
+            }
+          } catch (error) {
+            alert('Error de conexión');
+          }
+        }
       });
-    }
+    });
     
-   
     loadUsers();

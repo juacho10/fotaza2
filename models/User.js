@@ -222,6 +222,19 @@ class User {
         );
         this.password = hashedPassword;
     }
+        // Actualizar avatar de perfil
+    async updateAvatar(avatarUrl) {
+        await pool.query(
+            'UPDATE users SET avatar = ? WHERE id = ?',
+            [avatarUrl, this.id]
+        );
+        this.avatar = avatarUrl;
+    }
+
+    // Obtener avatar o default
+    getAvatarUrl() {
+        return this.avatar || '/images/default-avatar.png';
+    }
 }
 
 module.exports = User;

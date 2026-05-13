@@ -38,11 +38,16 @@ class Comment {
 
     static async findReportedByUser(userId) {
         const [rows] = await pool.query(`
-            SELECT cr.*, c.content, c.user_id as comment_author_id, c.post_id,
-                   u.username as reporter_username
+            SELECT cr.*, 
+                   c.content, 
+                   c.user_id as comment_author_id, 
+                   c.post_id,
+                   u.username as reporter_username,
+                   p.title as post_title
             FROM comment_reports cr
             JOIN comments c ON cr.comment_id = c.id
             JOIN users u ON cr.reporter_id = u.id
+            LEFT JOIN posts p ON c.post_id = p.id
             WHERE c.user_id = ? AND cr.status = 'pending'
             ORDER BY cr.created_at DESC
         `, [userId]);
@@ -70,7 +75,6 @@ class Comment {
             await pool.query('UPDATE comments SET is_reported = TRUE WHERE id = ?', [this.id]);
             this.is_reported = true;
             
-            // Notificar al autor del comentario
             await Notification.create(
                 this.user_id,
                 'comment_reported',

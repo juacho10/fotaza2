@@ -4,9 +4,10 @@ const { isAuthenticated } = require('../middlewares/authMiddleware');
 const Collection = require('../models/Collection');
 const User = require('../models/User');
 const Notification = require('../models/Notification');
+const Message = require('../models/Message');
 const pool = require('../config/db');
 
-// ========== ENDPOINT /users/search (PARA EL SELECTOR DE MENSAJES) ==========
+// ========== ENDPOINT /users/search ==========
 router.get('/users/search', isAuthenticated, async (req, res) => {
     console.log('📌 API BUSCAR USUARIOS - Query:', req.query.q);
     try {
@@ -16,7 +17,6 @@ router.get('/users/search', isAuthenticated, async (req, res) => {
         if (q && q.trim() !== '') {
             users = await User.search(q, 20);
         } else {
-            // Si no hay búsqueda, traer los últimos 20 usuarios (excepto el actual)
             const [rows] = await pool.query(
                 `SELECT id, username, email, role, created_at 
                  FROM users 
@@ -28,7 +28,6 @@ router.get('/users/search', isAuthenticated, async (req, res) => {
             users = rows;
         }
         
-        console.log('   Usuarios encontrados:', users.length);
         res.json({ users: users || [] });
     } catch (error) {
         console.error('❌ Error en search users:', error);
@@ -36,7 +35,7 @@ router.get('/users/search', isAuthenticated, async (req, res) => {
     }
 });
 
-// ========== ENDPOINT PARA OBTENER PUBLICACIONES DE UNA COLECCIÓN ==========
+// ========== ENDPOINT PARA COLECCIONES ==========
 router.get('/collections/:id/posts', isAuthenticated, async (req, res) => {
     try {
         const collection = await Collection.findById(req.params.id);
@@ -53,14 +52,25 @@ router.get('/collections/:id/posts', isAuthenticated, async (req, res) => {
     }
 });
 
-// ========== ENDPOINT PARA CONTADOR DE NOTIFICACIONES NO LEÍDAS ==========
+// ========== ENDPOINT PARA CONTADOR DE NOTIFICACIONES ==========
 router.get('/notifications/unread-count', isAuthenticated, async (req, res) => {
     try {
         const count = await Notification.getUnreadCount(req.session.userId);
         res.json({ count });
     } catch (error) {
         console.error(error);
-        res.status(500).json({ error: 'Error al obtener contador' });
+        res.status(500).json({ error: 'Error al obtener contador de notificaciones' });
+    }
+});
+
+// ========== ENDPOINT PARA CONTADOR DE MENSAJES NO LEÍDOS ==========
+router.get('/messages/unread-count', isAuthenticated, async (req, res) => {
+    try {
+        const count = await Message.getUnreadCount(req.session.userId);
+        res.json({ count });
+    } catch (error) {
+        console.error('Error al obtener contador de mensajes:', error);
+        res.status(500).json({ error: 'Error al obtener contador de mensajes' });
     }
 });
 

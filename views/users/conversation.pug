@@ -16,13 +16,17 @@ block content
           .conversation-container.mb-4(style="max-height: 500px; overflow-y: auto;")
             if messages && messages.length > 0
               each message in messages
-                .message-bubble(class=message.sender_id === currentUser.id ? 'sent' : 'received')
+                .message-bubble(class=message.sender_id == currentUser.id ? 'sent' : 'received')
                   .message-content
                     = message.content
                   .message-info
                     small
                       i.bi.bi-clock.me-1
                       | #{message.created_at ? new Date(message.created_at).toLocaleString() : 'Reciente'}
+                    if message.sender_id == currentUser.id
+                      button.btn.btn-sm.btn-link.text-danger.delete-msg-btn(data-id=message.id, style="padding: 0; margin-left: 10px;")
+                        i.bi.bi-trash
+                        | Eliminar
             else
               p.text-muted.text-center No hay mensajes aún. ¡Envía el primero!
           
@@ -40,9 +44,29 @@ block content
               i.bi.bi-send.me-1
               | Enviar mensaje
 
-block scripts
   script.
     const container = document.querySelector('.conversation-container');
     if (container) {
       container.scrollTop = container.scrollHeight;
     }
+    
+    // Eliminar mensaje individual
+    document.querySelectorAll('.delete-msg-btn').forEach(btn => {
+      btn.addEventListener('click', async (e) => {
+        e.preventDefault();
+        const messageId = btn.dataset.id;
+        if (confirm('¿Eliminar este mensaje?')) {
+          try {
+            const response = await fetch(`/users/messages/${messageId}`, { method: 'DELETE' });
+            if (response.ok) {
+              btn.closest('.message-bubble').remove();
+              alert('Mensaje eliminado');
+            } else {
+              alert('Error al eliminar mensaje');
+            }
+          } catch (error) {
+            alert('Error de conexión');
+          }
+        }
+      });
+    });

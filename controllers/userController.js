@@ -289,3 +289,41 @@ exports.conversation = async (req, res) => {
         res.status(500).render('500', { title: 'Error del servidor' });
     }
 };
+
+// ========== FUNCIÓN PARA ELIMINAR MENSAJE INDIVIDUAL ==========
+exports.deleteMessage = async (req, res) => {
+    console.log('📌 DELETE MESSAGE - ID:', req.params.id);
+    try {
+        const message = await Message.findById(req.params.id);
+        
+        if (!message) {
+            return res.status(404).json({ error: 'Mensaje no encontrado' });
+        }
+        
+        // Solo el remitente puede eliminar su mensaje
+        if (message.sender_id != req.session.userId) {
+            return res.status(403).json({ error: 'Solo puedes eliminar tus propios mensajes' });
+        }
+        
+        await message.delete();
+        res.json({ success: true });
+    } catch (error) {
+        console.error('❌ Error en deleteMessage:', error);
+        res.status(500).json({ error: 'Error al eliminar mensaje' });
+    }
+};
+
+// ========== FUNCIÓN PARA ELIMINAR CONVERSACIÓN COMPLETA ==========
+exports.deleteConversation = async (req, res) => {
+    console.log('📌 DELETE CONVERSATION - Con usuario:', req.params.userId);
+    try {
+        const otherUserId = req.params.userId;
+        const currentUserId = req.session.userId;
+        
+        await Message.deleteConversation(currentUserId, otherUserId);
+        res.json({ success: true });
+    } catch (error) {
+        console.error('❌ Error en deleteConversation:', error);
+        res.status(500).json({ error: 'Error al eliminar conversación' });
+    }
+};

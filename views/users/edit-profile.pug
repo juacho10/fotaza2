@@ -1,0 +1,43 @@
+extends ../layouts/layout
+
+block content
+  .row.justify-content-center
+    .col-md-6
+      .card.shadow-sm
+        .card-header.bg-primary.text-white
+          h4.mb-0
+            i.bi.bi-pencil-square.me-2
+            | Editar perfil
+        .card-body
+          if error
+            .alert.alert-danger= error
+          
+          form(method="POST", action="/users/edit-profile", enctype="multipart/form-data")
+            .mb-3.text-center
+              if user.avatar
+                img.rounded-circle.mb-2(src=user.avatar, width="120", height="120", style="object-fit: cover; border: 3px solid #0d6efd;")
+              else
+                i.bi.bi-person-circle(style="font-size: 80px; color: #6c757d;")
+              .mt-2
+                label.btn.btn-outline-primary.btn-sm
+                  i.bi.bi-camera.me-1
+                  | Cambiar foto de perfil
+                  input(type="file", name="avatar", accept="image/*", style="display: none;", onchange="this.form.submit()")
+                .form-text.text-muted Imagen recomendada: 200x200px, max 2MB
+            
+            .mb-3
+              label.form-label Nombre de usuario
+              input.form-control(type="text", name="username", value=user.username, required)
+            
+            .mb-3
+              label.form-label Email
+              input.form-control(type="email", name="email", value=user.email, required)
+            
+            hr
+            .d-flex.justify-content-between
+              a.btn.btn-secondary(href=`/users/${user.id}`)
+                i.bi.bi-arrow-left.me-1
+                | Cancelar
+              button.btn.btn-primary(type="submit")
+                i.bi.bi-save.me-1
+                | Guardar cambios

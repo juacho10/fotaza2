@@ -17,6 +17,7 @@ class Post {
         this.deleted_at = data.deleted_at;
         this.avg_rating = parseFloat(data.avg_rating) || 0;
         this.rating_count = data.rating_count || 0;
+        this.thumbnail = data.thumbnail || null;
     }
 
     static async create(postData) {
@@ -70,6 +71,16 @@ class Post {
                 unique.push(post);
             }
         }
+        
+        // Obtener miniaturas para cada post
+        for (const post of unique) {
+            const [thumbnail] = await pool.query(
+                'SELECT file_path FROM images WHERE post_id = ? LIMIT 1',
+                [post.id]
+            );
+            post.thumbnail = thumbnail[0]?.file_path || null;
+        }
+        
         return unique.map(row => new Post(row));
     }
 
@@ -81,6 +92,16 @@ class Post {
             WHERE p.user_id = ? AND p.deleted_at IS NULL AND p.is_banned = FALSE
             ORDER BY p.created_at DESC
         `, [userId]);
+        
+        // Obtener miniaturas
+        for (const row of rows) {
+            const [thumbnail] = await pool.query(
+                'SELECT file_path FROM images WHERE post_id = ? LIMIT 1',
+                [row.id]
+            );
+            row.thumbnail = thumbnail[0]?.file_path || null;
+        }
+        
         return rows.map(row => new Post(row));
     }
 
@@ -96,6 +117,16 @@ class Post {
               AND p.is_banned = FALSE
             ORDER BY p.created_at DESC
         `, userIds);
+        
+        // Obtener miniaturas
+        for (const row of rows) {
+            const [thumbnail] = await pool.query(
+                'SELECT file_path FROM images WHERE post_id = ? LIMIT 1',
+                [row.id]
+            );
+            row.thumbnail = thumbnail[0]?.file_path || null;
+        }
+        
         return rows.map(row => new Post(row));
     }
 
@@ -133,6 +164,15 @@ class Post {
         params.push(limit, offset);
         
         const [rows] = await pool.query(sql, params);
+        
+        // Obtener miniaturas
+        for (const row of rows) {
+            const [thumbnail] = await pool.query(
+                'SELECT file_path FROM images WHERE post_id = ? LIMIT 1',
+                [row.id]
+            );
+            row.thumbnail = thumbnail[0]?.file_path || null;
+        }
         
         // Contar total
         let countSql = `
@@ -282,7 +322,7 @@ class Post {
 
     async report(userId, reason, description) {
         const Report = require('./Report');
-        await Report.create(userId, this.id, null, reason, description);
+        await Report.createPostReport(userId, this.id, reason, description);
         
         await pool.query('UPDATE posts SET report_count = report_count + 1 WHERE id = ?', [this.id]);
         this.report_count++;

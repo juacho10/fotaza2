@@ -222,11 +222,11 @@ INSERT INTO posts (title, description, genre, tags, user_id, created_at) VALUES
 ('Flor de loto', 'Detalle de una hermosa flor de loto en el estanque.', 'naturaleza', 'flor,naturaleza,detalle', 6, NOW() - INTERVAL 1 DAY);
 
 INSERT INTO images (post_id, file_path, license, watermark_text, average_rating, rating_count) VALUES
-(1, '/uploads/placeholder.jpg', 'copyright', '© Juan Perez', 4.5, 2),
-(2, '/uploads/placeholder.jpg', 'free', NULL, 5.0, 1),
-(3, '/uploads/placeholder.jpg', 'copyright', '© Carlos Lopez', 4.0, 1),
-(4, '/uploads/placeholder.jpg', 'free', NULL, 4.0, 1),
-(5, '/uploads/placeholder.jpg', 'copyright', '© Ana Rodriguez', 0, 0);
+(1, '/uploads/Atardecer en la montaña.jpg', 'copyright', '© Juan Perez', 4.5, 2),
+(2, '/uploads/Playa del Carmen.jpg', 'free', NULL, 5.0, 1),
+(3, '/uploads/Bosque de niebla.jpg', 'copyright', '© Carlos Lopez', 4.0, 1),
+(4, '/uploads/Ciudad nocturna.jpg', 'free', NULL, 4.0, 1),
+(5, '/uploads/Flor de loto.jpg', 'copyright', '© Ana Rodriguez', 0, 0);
 
 
 INSERT INTO follows (follower_id, followed_id) VALUES

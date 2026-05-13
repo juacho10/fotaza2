@@ -102,11 +102,21 @@ class Message {
         return rows[0].count;
     }
 
-    // Eliminar mensaje
+    // Eliminar mensaje individual
     async delete() {
         await pool.query(
             'DELETE FROM messages WHERE id = ?',
             [this.id]
+        );
+    }
+
+    // Eliminar conversación completa (todos los mensajes entre dos usuarios)
+    static async deleteConversation(userId1, userId2) {
+        await pool.query(
+            `DELETE FROM messages 
+             WHERE (sender_id = ? AND receiver_id = ?) 
+                OR (sender_id = ? AND receiver_id = ?)`,
+            [userId1, userId2, userId2, userId1]
         );
     }
 }

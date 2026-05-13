@@ -1,0 +1,68 @@
+extends ../layouts/layout
+
+block content
+  .row
+    .col-md-10.offset-md-1
+      .d-flex.justify-content-between.align-items-center.mb-4
+        h2
+          i.bi.bi-flag.me-2
+          | Mis comentarios denunciados
+        a.btn.btn-outline-secondary(href="/users/notifications")
+          i.bi.bi-bell.me-1
+          | Ver notificaciones
+      
+      if error
+        .alert.alert-danger= error
+      
+      if reportedComments && reportedComments.length > 0
+        .alert.alert-warning
+          i.bi.bi-exclamation-triangle.me-2
+          | Tienes #{reportedComments.length} comentario(s) denunciado(s).
+        
+        .list-group
+          each report in reportedComments
+            .list-group-item.mb-3
+              .d-flex.justify-content-between.align-items-start
+                .flex-grow-1
+                  .d-flex.justify-content-between.align-items-center.mb-2
+                    strong
+                      i.bi.bi-chat-dots.me-1
+                      | Comentario en publicación:
+                      a.text-decoration-none.ms-2(href=`/posts/${report.post_id}`) Ver publicación
+                    span.badge.bg-warning.text-dark Pendiente
+                  
+                  .card.bg-light.mb-2
+                    .card-body.py-2
+                      p.mb-0.fst-italic= report.content
+                  
+                  .small.text-muted
+                    .row
+                      .col-md-6
+                        i.bi.bi-person.me-1
+                        strong Denunciado por: 
+                        span.text-danger #{report.reporter_username}
+                      .col-md-6
+                        i.bi.bi-calendar.me-1
+                        strong Fecha: 
+                        | #{report.created_at ? new Date(report.created_at).toLocaleString() : 'Fecha desconocida'}
+                    .mt-1
+                      i.bi.bi-exclamation-triangle.me-1
+                      strong Motivo: 
+                      span.text-warning #{report.reason}
+                    if report.description
+                      .mt-1
+                        i.bi.bi-chat-text.me-1
+                        strong Descripción: 
+                        | #{report.description}
+                
+                .ms-3
+                  form(action=`/posts/comments/${report.comment_id}?_method=DELETE`, method="POST", onsubmit="return confirm('¿Eliminar este comentario?')")
+                    button.btn.btn-sm.btn-danger(type="submit")
+                      i.bi.bi-trash.me-1
+                      | Eliminar
+      else
+        .alert.alert-success.text-center
+          i.bi.bi-check-circle.me-2
+          | No tienes comentarios denunciados.
+          br
+          small.text-muted ¡Buen trabajo!

@@ -12,6 +12,15 @@ block content
         each post in posts
           .col-md-4.col-lg-3.mb-4
             .card.h-100.shadow-sm
+              //- Miniatura de la imagen
+              if post.thumbnail
+                img.card-img-top(src=post.thumbnail, alt=post.title, style="height: 180px; object-fit: cover;")
+              else
+                .bg-secondary.text-white.text-center.py-5(style="height: 180px;")
+                  i.bi.bi-image(style="font-size: 48px;")
+                  br
+                  small Sin imagen
+              
               .card-body
                 h5.card-title= post.title
                 p.card-text.text-muted.small
