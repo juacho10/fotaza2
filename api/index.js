@@ -17,23 +17,25 @@ const { verifyToken } = require('../middlewares/jwtAuth');
 
 const app = express();
 
-app.set('trust proxy', 1);
+// Configuración de vistas - CORREGIDO
 app.set('view engine', 'pug');
 app.set('views', path.join(__dirname, '../views'));
 
+app.set('trust proxy', 1);
 app.use(express.urlencoded({ extended: true }));
 app.use(express.json());
 app.use(methodOverride('_method'));
 app.use(express.static(path.join(__dirname, '../public')));
 
+// Configuración de sesión para producción
 app.use(session({
-    secret: process.env.SESSION_SECRET,
+    secret: process.env.SESSION_SECRET || 'mi-secreto-super-seguro',
     resave: false,
     saveUninitialized: false,
     cookie: {
         maxAge: 30 * 24 * 60 * 60 * 1000,
         httpOnly: true,
-        secure: true,
+        secure: process.env.NODE_ENV === 'production' ? true : false,
         sameSite: 'lax'
     }
 }));
@@ -41,6 +43,7 @@ app.use(session({
 app.use(verifyToken);
 app.use(setUserLocals);
 
+// Rutas
 app.use('/', authRoutes);
 app.use('/posts', postRoutes);
 app.use('/users', userRoutes);
@@ -49,6 +52,7 @@ app.use('/admin', adminRoutes);
 app.use('/api', apiRoutes);
 app.use('/api/auth', apiAuthRoutes);
 
+// Ruta principal
 app.get('/', async (req, res) => {
     try {
         const Post = require('../models/Post');
@@ -60,10 +64,12 @@ app.get('/', async (req, res) => {
     }
 });
 
+// Manejador 404
 app.use((req, res) => {
     res.status(404).render('404', { title: 'Página no encontrada' });
 });
 
+// Manejador de errores
 app.use((err, req, res, next) => {
     console.error(err.stack);
     res.status(500).render('500', { title: 'Error del servidor' });
