@@ -2,10 +2,11 @@
   "name": "fotaza2",
   "version": "1.0.0",
   "description": "Plataforma para compartir y vender fotografías - Trabajo Práctico Integrador Programación Web II",
-  "main": "app.js",
+  "main":  "api/index.js",
   "scripts": {
-    "start": "node app.js",
-    "dev": "nodemon app.js",
+    "start": "node api/index.js",
+    "dev": "nodemon api/index.js",
+    "vercel-build": "npm install",
     "db:init": "mysql -u root -p < database/init.sql"
   },
   "dependencies": {
