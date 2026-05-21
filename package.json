@@ -2,7 +2,7 @@
   "name": "fotaza2",
   "version": "1.0.0",
   "description": "Plataforma para compartir y vender fotografías - Trabajo Práctico Integrador Programación Web II",
-  "main":  "api/index.js",
+  "main": "api/index.js",
   "scripts": {
     "start": "node api/index.js",
     "dev": "nodemon api/index.js",
@@ -25,5 +25,8 @@
   },
   "devDependencies": {
     "nodemon": "^2.0.22"
+  },
+  "engines": {
+    "node": "18.x"
   }
 }
