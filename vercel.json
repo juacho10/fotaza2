@@ -1,9 +1,17 @@
 {
   "version": 2,
+  "functions": {
+    "api/index.js": {
+      "maxDuration": 10
+    }
+  },
   "rewrites": [
     {
       "source": "/(.*)",
       "destination": "/api/index"
     }
-  ]
+  ],
+  "env": {
+    "NODE_ENV": "production"
+  }
 }

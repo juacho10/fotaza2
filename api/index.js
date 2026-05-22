@@ -1,5 +1,6 @@
 const express = require('express');
 const session = require('express-session');
+const MySQLStore = require('express-mysql-session')(session);
 const path = require('path');
 const methodOverride = require('method-override');
 require('dotenv').config();
@@ -17,7 +18,7 @@ const { verifyToken } = require('../middlewares/jwtAuth');
 
 const app = express();
 
-// Configuración de vistas - CORREGIDO
+// Configuración de vistas
 app.set('view engine', 'pug');
 app.set('views', path.join(__dirname, '../views'));
 
@@ -27,15 +28,33 @@ app.use(express.json());
 app.use(methodOverride('_method'));
 app.use(express.static(path.join(__dirname, '../public')));
 
-// Configuración de sesión para producción
+// Configuración de sesión con MySQL para Vercel
+const sessionStore = new MySQLStore({
+    host: process.env.DB_HOST,
+    port: process.env.DB_PORT || 10153,
+    user: process.env.DB_USER,
+    password: process.env.DB_PASSWORD,
+    database: process.env.DB_NAME,
+    ssl: { rejectUnauthorized: false },
+    schema: {
+        tableName: 'sessions',
+        columnNames: {
+            session_id: 'session_id',
+            expires: 'expires',
+            data: 'data'
+        }
+    }
+});
+
 app.use(session({
     secret: process.env.SESSION_SECRET || 'mi-secreto-super-seguro',
+    store: sessionStore,
     resave: false,
     saveUninitialized: false,
     cookie: {
         maxAge: 30 * 24 * 60 * 60 * 1000,
         httpOnly: true,
-        secure: process.env.NODE_ENV === 'production' ? true : false,
+        secure: true, // En Vercel siempre HTTPS
         sameSite: 'lax'
     }
 }));
