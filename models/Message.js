@@ -14,7 +14,7 @@ class Message {
         this.receiver_username = data.receiver_username;
     }
 
-    // Crear mensaje
+    
     static async create(senderId, receiverId, subject, content) {
         const [result] = await pool.query(
             `INSERT INTO messages (sender_id, receiver_id, subject, content) 
@@ -22,19 +22,25 @@ class Message {
             [senderId, receiverId, subject, content]
         );
         
-        await Notification.create(
-            receiverId,
-            'message',
-            senderId,
-            null,
-            null,
-            result.insertId
-        );
+        
+        try {
+            await Notification.create(
+                receiverId,    
+                'message',     
+                senderId,      
+                null,           
+                null,           
+                result.insertId,
+                null            
+            );
+        } catch (err) {
+            console.error('Error al crear notificación de mensaje:', err.message);
+        }
         
         return result.insertId;
     }
 
-    // Obtener mensajes por usuario
+    
     static async findByUser(userId, limit = 50) {
         const [rows] = await pool.query(`
             SELECT m.*, 
@@ -50,7 +56,6 @@ class Message {
         return rows.map(row => new Message(row));
     }
 
-    // Obtener conversación entre dos usuarios
     static async findConversation(userId1, userId2, limit = 50) {
         const [rows] = await pool.query(`
             SELECT m.*, 
@@ -67,7 +72,6 @@ class Message {
         return rows.map(row => new Message(row));
     }
 
-    // Buscar por ID
     static async findById(id) {
         const [rows] = await pool.query(`
             SELECT m.*, 
@@ -82,7 +86,6 @@ class Message {
         return new Message(rows[0]);
     }
 
-    // Marcar como leído
     async markAsRead() {
         if (!this.is_read && this.receiver_id) {
             await pool.query(
@@ -93,7 +96,6 @@ class Message {
         }
     }
 
-    // Contar mensajes no leídos
     static async getUnreadCount(userId) {
         const [rows] = await pool.query(
             'SELECT COUNT(*) as count FROM messages WHERE receiver_id = ? AND is_read = FALSE',
@@ -102,7 +104,6 @@ class Message {
         return rows[0].count;
     }
 
-    // Eliminar mensaje individual
     async delete() {
         await pool.query(
             'DELETE FROM messages WHERE id = ?',
@@ -110,7 +111,6 @@ class Message {
         );
     }
 
-    // Eliminar conversación completa (todos los mensajes entre dos usuarios)
     static async deleteConversation(userId1, userId2) {
         await pool.query(
             `DELETE FROM messages 

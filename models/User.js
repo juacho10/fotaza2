@@ -1,4 +1,3 @@
-
 const pool = require('../config/db');
 const bcrypt = require('bcryptjs');
 
@@ -13,6 +12,7 @@ class User {
         this.banned_posts_count = data.banned_posts_count || 0;
         this.created_at = data.created_at;
         this.deleted_at = data.deleted_at;
+        this.avatar = data.avatar;
     }
 
     // Crear nuevo usuario
@@ -39,7 +39,7 @@ class User {
     // Buscar por ID
     static async findById(id) {
         const [rows] = await pool.query(
-            'SELECT id, username, email, role, is_active, banned_posts_count, created_at FROM users WHERE id = ? AND deleted_at IS NULL',
+            'SELECT id, username, email, role, is_active, banned_posts_count, created_at, avatar FROM users WHERE id = ? AND deleted_at IS NULL',
             [id]
         );
         if (rows.length === 0) return null;
@@ -73,7 +73,7 @@ class User {
         return bcrypt.compare(password, this.password);
     }
 
-    // Seguir a otro usuario
+    // Seguir a otro usuario - CORREGIDO
     async follow(userIdToFollow) {
         if (this.id === userIdToFollow) {
             throw new Error('No puedes seguirte a ti mismo');
@@ -84,13 +84,7 @@ class User {
                 [this.id, userIdToFollow]
             );
             const Notification = require('./Notification');
-            await Notification.create(
-                userIdToFollow,
-                'follow',
-                this.id,
-                null,
-                null
-            );
+            await Notification.create(userIdToFollow, 'follow', this.id, null, null, null, null);
             return true;
         } catch (error) {
             if (error.code === 'ER_DUP_ENTRY') {
@@ -222,7 +216,8 @@ class User {
         );
         this.password = hashedPassword;
     }
-        // Actualizar avatar de perfil
+
+    // Actualizar avatar de perfil
     async updateAvatar(avatarUrl) {
         await pool.query(
             'UPDATE users SET avatar = ? WHERE id = ?',

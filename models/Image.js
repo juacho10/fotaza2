@@ -35,6 +35,7 @@ class Image {
         return rows.length > 0 ? rows[0].value : null;
     }
 
+   
     async addRating(userId, value) {
         const [postRows] = await pool.query('SELECT user_id FROM posts WHERE id = ?', [this.post_id]);
         
@@ -50,7 +51,12 @@ class Image {
             
             await this.updateAverageRating();
             
-            await Notification.create(postRows[0].user_id, 'rating', userId, this.id, this.post_id);
+            
+            try {
+                await Notification.create(postRows[0].user_id, 'rating', userId, this.id, this.post_id, null, null);
+            } catch (err) {
+                console.error('Error al crear notificación de rating:', err.message);
+            }
             
             return true;
         } catch (error) {
@@ -62,7 +68,6 @@ class Image {
     }
 
     async updateAverageRating() {
-        // CORREGIDO: Usar AVG de valoraciones directamente
         const [rows] = await pool.query(`
             SELECT AVG(r.value) as avg, COUNT(r.id) as count 
             FROM ratings r 
@@ -84,7 +89,6 @@ class Image {
     }
 
     async updatePostAverageRating() {
-        // CORREGIDO: Calcular promedio de la publicación desde las valoraciones individuales
         const [rows] = await pool.query(`
             SELECT AVG(r.value) as avg, COUNT(r.id) as count 
             FROM ratings r 
@@ -111,7 +115,7 @@ class Image {
                 [userId, this.post_id, this.id]
             );
             
-            await Notification.create(postRows[0].user_id, 'interest', userId, this.id, this.post_id);
+            await Notification.create(postRows[0].user_id, 'interest', userId, this.id, this.post_id, null, null);
             
             return true;
         } catch (error) {

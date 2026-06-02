@@ -41,7 +41,6 @@ class Post {
     }
 
     static async findAllHome(limit = 20, offset = 0) {
-        // Balance: 70% mejor valoradas (con mínimo 3 votos), 30% recientes
         const [bestRated] = await pool.query(`
             SELECT p.*, u.username
             FROM posts p
@@ -61,7 +60,6 @@ class Post {
             LIMIT ?
         `, [limit - Math.floor(limit * 0.7)]);
         
-        // Combinar y eliminar duplicados
         const all = [...bestRated, ...recent];
         const unique = [];
         const ids = new Set();
@@ -72,7 +70,6 @@ class Post {
             }
         }
         
-        // Obtener miniaturas para cada post
         for (const post of unique) {
             const [thumbnail] = await pool.query(
                 'SELECT file_path FROM images WHERE post_id = ? LIMIT 1',
@@ -93,7 +90,6 @@ class Post {
             ORDER BY p.created_at DESC
         `, [userId]);
         
-        // Obtener miniaturas
         for (const row of rows) {
             const [thumbnail] = await pool.query(
                 'SELECT file_path FROM images WHERE post_id = ? LIMIT 1',
@@ -118,7 +114,6 @@ class Post {
             ORDER BY p.created_at DESC
         `, userIds);
         
-        // Obtener miniaturas
         for (const row of rows) {
             const [thumbnail] = await pool.query(
                 'SELECT file_path FROM images WHERE post_id = ? LIMIT 1',
@@ -165,7 +160,6 @@ class Post {
         
         const [rows] = await pool.query(sql, params);
         
-        // Obtener miniaturas
         for (const row of rows) {
             const [thumbnail] = await pool.query(
                 'SELECT file_path FROM images WHERE post_id = ? LIMIT 1',
@@ -174,7 +168,6 @@ class Post {
             row.thumbnail = thumbnail[0]?.file_path || null;
         }
         
-        // Contar total
         let countSql = `
             SELECT COUNT(DISTINCT p.id) as total
             FROM posts p
@@ -269,14 +262,19 @@ class Post {
         return rows;
     }
 
+    // MÉTODO addComment CORREGIDO
     async addComment(userId, content) {
         const [result] = await pool.query(
             'INSERT INTO comments (user_id, post_id, content) VALUES (?, ?, ?)',
             [userId, this.id, content]
         );
         
-        const Notification = require('./Notification');
-        await Notification.create(this.user_id, 'comment', userId, null, this.id);
+        try {
+            const Notification = require('./Notification');
+            await Notification.create(this.user_id, 'comment', userId, null, this.id, null, null);
+        } catch (err) {
+            console.error('Error al crear notificación de comentario:', err.message);
+        }
         
         return result.insertId;
     }
@@ -297,6 +295,7 @@ class Post {
         return rows.length > 0;
     }
 
+    // MÉTODO markInterest CORREGIDO
     async markInterest(userId, imageId = null) {
         if (this.user_id === userId) {
             throw new Error('No puedes marcar interés en tu propia publicación');
@@ -309,7 +308,7 @@ class Post {
             );
             
             const Notification = require('./Notification');
-            await Notification.create(this.user_id, 'interest', userId, imageId, this.id);
+            await Notification.create(this.user_id, 'interest', userId, imageId, this.id, null, null);
             
             return true;
         } catch (error) {

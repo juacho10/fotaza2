@@ -7,7 +7,6 @@ const { CloudinaryStorage } = require('multer-storage-cloudinary');
 const multer = require('multer');
 const path = require('path');
 
-
 // Configurar almacenamiento en Cloudinary
 const storage = new CloudinaryStorage({
     cloudinary: cloudinary,
@@ -86,7 +85,6 @@ exports.create = async (req, res) => {
                 let finalUrl = file.path;
                 let publicId = file.filename;
                 
-                // Si es imagen con copyright y tiene marca de agua
                 if (req.fileType === 'image' && license === 'copyright' && watermark && watermark.trim()) {
                     const watermarkUrl = cloudinary.url(publicId, {
                         transformation: [
@@ -280,6 +278,7 @@ exports.toggleComments = async (req, res) => {
     }
 };
 
+// MÉTODO rateImage CORREGIDO - Actualiza en tiempo real
 exports.rateImage = async (req, res) => {
     try {
         const image = await Image.findById(req.params.imageId);
@@ -296,10 +295,15 @@ exports.rateImage = async (req, res) => {
         
         await image.addRating(req.session.userId, ratingValue);
         
+        const updatedImage = await Image.findById(req.params.imageId);
+        const post = await Post.findById(updatedImage.post_id);
+        
         res.json({ 
             success: true, 
-            average_rating: image.average_rating,
-            rating_count: image.rating_count
+            average_rating: updatedImage.average_rating,
+            rating_count: updatedImage.rating_count,
+            post_avg_rating: post.avg_rating,
+            post_rating_count: post.rating_count
         });
     } catch (error) {
         console.error(error);
@@ -386,7 +390,6 @@ exports.reportComment = async (req, res) => {
     }
 };
 
-// ========== FUNCIÓN CORREGIDA ==========
 exports.myReportedComments = async (req, res) => {
     console.log('📌 MY REPORTED COMMENTS - Usuario:', req.session.userId);
     try {
