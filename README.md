@@ -69,7 +69,6 @@ Fotaza 2 es una aplicación web completa que permite almacenar, ordenar, buscar,
 | Email | Contraseña | Rol |
 |-------|------------|-----|
 | admin@fotaza2.com | password123 | Administrador |
-| validator@fotaza2.com | password123 | Validador |
 | juan@example.com | password123 | Usuario |
 | maria@example.com | password123 | Usuario |
 | carlos@example.com | password123 | Usuario |
