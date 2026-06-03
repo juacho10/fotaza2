@@ -73,26 +73,25 @@ class User {
         return bcrypt.compare(password, this.password);
     }
 
-    // Seguir a otro usuario - CORREGIDO
-    async follow(userIdToFollow) {
-        if (this.id === userIdToFollow) {
-            throw new Error('No puedes seguirte a ti mismo');
-        }
-        try {
-            await pool.query(
-                'INSERT INTO follows (follower_id, followed_id) VALUES (?, ?)',
-                [this.id, userIdToFollow]
-            );
-            const Notification = require('./Notification');
-            await Notification.create(userIdToFollow, 'follow', this.id, null, null, null, null);
-            return true;
-        } catch (error) {
-            if (error.code === 'ER_DUP_ENTRY') {
-                throw new Error('Ya sigues a este usuario');
-            }
-            throw error;
-        }
+async follow(userIdToFollow) {
+    if (this.id === userIdToFollow) {
+        throw new Error('No puedes seguirte a ti mismo');
     }
+    try {
+        await pool.query(
+            'INSERT INTO follows (follower_id, followed_id) VALUES (?, ?)',
+            [this.id, userIdToFollow]
+        );
+        const Notification = require('./Notification');
+        await Notification.create(userIdToFollow, 'follow', this.id, null, null, null, null);
+        return true;
+    } catch (error) {
+        if (error.code === 'ER_DUP_ENTRY') {
+            throw new Error('Ya sigues a este usuario');
+        }
+        throw error;
+    }
+}
 
     // Dejar de seguir
     async unfollow(userIdToUnfollow) {

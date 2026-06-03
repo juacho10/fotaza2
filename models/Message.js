@@ -14,7 +14,7 @@ class Message {
         this.receiver_username = data.receiver_username;
     }
 
-    
+    // ========== MÉTODO CORREGIDO ==========
     static async create(senderId, receiverId, subject, content) {
         const [result] = await pool.query(
             `INSERT INTO messages (sender_id, receiver_id, subject, content) 
@@ -22,16 +22,15 @@ class Message {
             [senderId, receiverId, subject, content]
         );
         
-        
         try {
             await Notification.create(
-                receiverId,    
-                'message',     
-                senderId,      
-                null,           
-                null,           
+                receiverId,
+                'message',
+                senderId,
+                null,
+                null,
                 result.insertId,
-                null            
+                null
             );
         } catch (err) {
             console.error('Error al crear notificación de mensaje:', err.message);
@@ -40,7 +39,6 @@ class Message {
         return result.insertId;
     }
 
-    
     static async findByUser(userId, limit = 50) {
         const [rows] = await pool.query(`
             SELECT m.*, 
@@ -105,10 +103,7 @@ class Message {
     }
 
     async delete() {
-        await pool.query(
-            'DELETE FROM messages WHERE id = ?',
-            [this.id]
-        );
+        await pool.query('DELETE FROM messages WHERE id = ?', [this.id]);
     }
 
     static async deleteConversation(userId1, userId2) {

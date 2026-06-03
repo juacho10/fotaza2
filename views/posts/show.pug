@@ -232,7 +232,6 @@ block content
         let currentImageId = null;
         let currentImageCard = null;
         
-        // Botones de valoración
         document.querySelectorAll('.rate-btn').forEach(btn => {
           btn.addEventListener('click', () => {
             currentImageId = btn.dataset.imageId;
@@ -241,7 +240,6 @@ block content
           });
         });
         
-        // Envío de valoración con actualización en tiempo real
         document.getElementById('submitRating')?.addEventListener('click', async () => {
           const rating = document.querySelector('input[name="rating"]:checked')?.value;
           if (!rating) {
@@ -258,11 +256,7 @@ block content
             
             const data = await response.json();
             if (response.ok && data.success) {
-              // Actualizar estrellas en la imagen valorada
               const ratingContainer = currentImageCard.querySelector('.rating');
-              const starsContainer = ratingContainer.cloneNode(true);
-              
-              // Actualizar promedio
               const avg = data.average_rating || 0;
               const fullStars = Math.floor(avg);
               const hasHalfStar = (avg - fullStars) >= 0.5;
@@ -280,7 +274,6 @@ block content
               
               ratingContainer.innerHTML = starsHtml + `<span class="ms-2 text-muted rating-count">(${data.rating_count || 0} valoraciones)</span>`;
               
-              // Actualizar promedio de la publicación en la barra lateral
               const postAvgSpan = document.getElementById('postAvgRating');
               const postCountSpan = document.getElementById('postRatingCount');
               if (postAvgSpan) {
@@ -290,13 +283,9 @@ block content
                 postCountSpan.textContent = data.post_rating_count;
               }
               
-              // Cerrar modal
               bootstrap.Modal.getInstance(document.getElementById('rateModal')).hide();
-              
-              // Limpiar selección de radio
               document.querySelectorAll('input[name="rating"]').forEach(radio => radio.checked = false);
               
-              // Mostrar mensaje de éxito
               const toast = document.createElement('div');
               toast.className = 'position-fixed bottom-0 end-0 p-3';
               toast.style.zIndex = '11';
@@ -313,7 +302,6 @@ block content
               `;
               document.body.appendChild(toast);
               setTimeout(() => toast.remove(), 3000);
-              
             } else {
               alert(data.error || 'Error al valorar');
             }
@@ -322,7 +310,6 @@ block content
           }
         });
         
-        // Botón Me interesa para imágenes
         document.querySelectorAll('.interest-btn').forEach(btn => {
           btn.addEventListener('click', async () => {
             const imageId = btn.dataset.imageId;
@@ -342,7 +329,6 @@ block content
           });
         });
         
-        // Botón Me interesa para publicaciones/videos
         document.querySelectorAll('.interest-btn-post').forEach(btn => {
           btn.addEventListener('click', async () => {
             const postId = btn.dataset.postId;
@@ -366,7 +352,6 @@ block content
           });
         });
         
-        // Denunciar comentario
         document.querySelectorAll('.report-comment-btn').forEach(btn => {
           btn.addEventListener('click', async () => {
             const commentId = btn.dataset.commentId;

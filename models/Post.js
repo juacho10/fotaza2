@@ -262,7 +262,7 @@ class Post {
         return rows;
     }
 
-    // MÉTODO addComment CORREGIDO
+    // ========== MÉTODO CORREGIDO ==========
     async addComment(userId, content) {
         const [result] = await pool.query(
             'INSERT INTO comments (user_id, post_id, content) VALUES (?, ?, ?)',
@@ -295,7 +295,7 @@ class Post {
         return rows.length > 0;
     }
 
-    // MÉTODO markInterest CORREGIDO
+    // ========== MÉTODO CORREGIDO ==========
     async markInterest(userId, imageId = null) {
         if (this.user_id === userId) {
             throw new Error('No puedes marcar interés en tu propia publicación');

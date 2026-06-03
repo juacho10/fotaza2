@@ -17,7 +17,6 @@ class Notification {
         this.message_subject = data.message_subject;
     }
 
-    // Crear notificación - CORREGIDO con 7 parámetros
     static async create(userId, type, sourceUserId, imageId = null, postId = null, messageId = null, commentId = null) {
         const [result] = await pool.query(
             `INSERT INTO notifications (user_id, type, source_user_id, image_id, post_id, message_id, comment_id) 
@@ -27,7 +26,6 @@ class Notification {
         return result.insertId;
     }
 
-    // Obtener notificaciones por usuario
     static async findByUser(userId, limit = 50) {
         const [rows] = await pool.query(`
             SELECT n.*, u.username as source_username,
@@ -44,7 +42,6 @@ class Notification {
         return rows.map(row => new Notification(row));
     }
 
-    // Buscar por ID
     static async findById(id) {
         const [rows] = await pool.query(`
             SELECT n.*, u.username as source_username
@@ -56,29 +53,17 @@ class Notification {
         return new Notification(rows[0]);
     }
 
-    // Marcar como leída
     async markAsRead() {
-        await pool.query(
-            'UPDATE notifications SET is_read = TRUE WHERE id = ?',
-            [this.id]
-        );
+        await pool.query('UPDATE notifications SET is_read = TRUE WHERE id = ?', [this.id]);
         this.is_read = true;
     }
 
-    // Marcar todas como leídas
     static async markAllAsRead(userId) {
-        await pool.query(
-            'UPDATE notifications SET is_read = TRUE WHERE user_id = ? AND is_read = FALSE',
-            [userId]
-        );
+        await pool.query('UPDATE notifications SET is_read = TRUE WHERE user_id = ? AND is_read = FALSE', [userId]);
     }
 
-    // Obtener contador de no leídas
     static async getUnreadCount(userId) {
-        const [rows] = await pool.query(
-            'SELECT COUNT(*) as count FROM notifications WHERE user_id = ? AND is_read = FALSE',
-            [userId]
-        );
+        const [rows] = await pool.query('SELECT COUNT(*) as count FROM notifications WHERE user_id = ? AND is_read = FALSE', [userId]);
         return rows[0].count;
     }
 }

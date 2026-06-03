@@ -7,16 +7,13 @@ const { CloudinaryStorage } = require('multer-storage-cloudinary');
 const multer = require('multer');
 const path = require('path');
 
-// Configurar almacenamiento en Cloudinary
 const storage = new CloudinaryStorage({
     cloudinary: cloudinary,
     params: {
         folder: 'fotaza2',
         allowed_formats: ['jpg', 'jpeg', 'png', 'gif', 'webp', 'mp4', 'webm', 'ogg'],
         resource_type: 'auto',
-        transformation: [
-            { quality: 'auto', fetch_format: 'auto' }
-        ]
+        transformation: [{ quality: 'auto', fetch_format: 'auto' }]
     }
 });
 
@@ -72,13 +69,8 @@ exports.create = async (req, res) => {
         
         try {
             const postId = await Post.create({ 
-                title, 
-                description, 
-                genre: genre || null,
-                tags, 
-                user_id: req.session.userId 
+                title, description, genre: genre || null, tags, user_id: req.session.userId 
             });
-            
             const post = await Post.findById(postId);
             
             for (const file of files) {
@@ -86,20 +78,13 @@ exports.create = async (req, res) => {
                 let publicId = file.filename;
                 
                 if (req.fileType === 'image' && license === 'copyright' && watermark && watermark.trim()) {
-                    const watermarkUrl = cloudinary.url(publicId, {
+                    finalUrl = cloudinary.url(publicId, {
                         transformation: [
-                            { overlay: {
-                                font_family: "Arial",
-                                font_size: 24,
-                                font_weight: "bold",
-                                text: encodeURIComponent(watermark),
-                                color: "white"
-                            }},
+                            { overlay: { font_family: "Arial", font_size: 24, font_weight: "bold", text: encodeURIComponent(watermark), color: "white" }},
                             { gravity: "south_east", x: 10, y: 10 },
                             { flags: "layer_apply" }
                         ]
                     });
-                    finalUrl = watermarkUrl;
                 }
                 
                 if (req.fileType === 'image') {
@@ -108,7 +93,6 @@ exports.create = async (req, res) => {
                     await post.addVideo(finalUrl, null, 0);
                 }
             }
-            
             res.redirect(`/posts/${postId}`);
         } catch (error) {
             console.error(error);
@@ -131,22 +115,13 @@ exports.show = async (req, res) => {
         const images = await post.getImages();
         const videos = await post.getVideos();
         const comments = await post.getComments();
-        const userRating = req.session.userId ? 
-            await Image.getUserRatingForPost(req.session.userId, post.id) : null;
-        const hasInterest = req.session.userId ? 
-            await post.hasInterest(req.session.userId) : false;
+        const userRating = req.session.userId ? await Image.getUserRatingForPost(req.session.userId, post.id) : null;
+        const hasInterest = req.session.userId ? await post.hasInterest(req.session.userId) : false;
         const reportCount = await post.getReportCount();
         
         res.render('posts/show', { 
-            title: post.title, 
-            post, 
-            images, 
-            videos,
-            comments,
-            userRating,
-            hasInterest,
-            isReported: reportCount >= 3,
-            isOwner: req.session.userId === post.user_id
+            title: post.title, post, images, videos, comments, userRating, hasInterest,
+            isReported: reportCount >= 3, isOwner: req.session.userId === post.user_id
         });
     } catch (error) {
         console.error(error);
@@ -157,20 +132,11 @@ exports.show = async (req, res) => {
 exports.edit = async (req, res) => {
     try {
         const post = await Post.findById(req.params.id);
-        if (!post || post.is_banned) {
-            return res.status(404).render('404', { title: 'Publicación no encontrada' });
-        }
-        
-        if (post.user_id !== req.session.userId) {
-            return res.status(403).render('403', { title: 'No autorizado' });
-        }
+        if (!post || post.is_banned) return res.status(404).render('404', { title: 'Publicación no encontrada' });
+        if (post.user_id !== req.session.userId) return res.status(403).render('403', { title: 'No autorizado' });
         
         if (post.is_reported) {
-            return res.render('posts/edit', { 
-                title: 'Editar publicación', 
-                post, 
-                error: 'Esta publicación ha sido denunciada y no puede ser modificada' 
-            });
+            return res.render('posts/edit', { title: 'Editar publicación', post, error: 'Esta publicación ha sido denunciada y no puede ser modificada' });
         }
         
         const images = await post.getImages();
@@ -185,17 +151,11 @@ exports.edit = async (req, res) => {
 exports.update = async (req, res) => {
     try {
         const post = await Post.findById(req.params.id);
-        if (!post || post.user_id !== req.session.userId) {
-            return res.status(403).json({ error: 'No autorizado' });
-        }
-        
-        if (post.is_reported) {
-            return res.status(400).json({ error: 'Esta publicación ha sido denunciada y no puede ser modificada' });
-        }
+        if (!post || post.user_id !== req.session.userId) return res.status(403).json({ error: 'No autorizado' });
+        if (post.is_reported) return res.status(400).json({ error: 'Esta publicación ha sido denunciada y no puede ser modificada' });
         
         const { title, description, genre, tags, comments_open } = req.body;
         await post.update({ title, description, genre, tags, comments_open });
-        
         res.redirect(`/posts/${post.id}`);
     } catch (error) {
         console.error(error);
@@ -206,10 +166,7 @@ exports.update = async (req, res) => {
 exports.delete = async (req, res) => {
     try {
         const post = await Post.findById(req.params.id);
-        if (!post || post.user_id !== req.session.userId) {
-            return res.status(403).json({ error: 'No autorizado' });
-        }
-        
+        if (!post || post.user_id !== req.session.userId) return res.status(403).json({ error: 'No autorizado' });
         await post.softDelete();
         res.redirect(`/users/${req.session.userId}`);
     } catch (error) {
@@ -221,18 +178,11 @@ exports.delete = async (req, res) => {
 exports.addComment = async (req, res) => {
     try {
         const post = await Post.findById(req.params.id);
-        if (!post) {
-            return res.status(404).json({ error: 'Publicación no encontrada' });
-        }
-        
-        if (!post.comments_open) {
-            return res.status(403).json({ error: 'Los comentarios están cerrados' });
-        }
+        if (!post) return res.status(404).json({ error: 'Publicación no encontrada' });
+        if (!post.comments_open) return res.status(403).json({ error: 'Los comentarios están cerrados' });
         
         const { content } = req.body;
-        if (!content || content.trim() === '') {
-            return res.status(400).json({ error: 'El comentario no puede estar vacío' });
-        }
+        if (!content || content.trim() === '') return res.status(400).json({ error: 'El comentario no puede estar vacío' });
         
         await post.addComment(req.session.userId, content);
         res.redirect(`/posts/${post.id}#comments`);
@@ -245,16 +195,11 @@ exports.addComment = async (req, res) => {
 exports.deleteComment = async (req, res) => {
     try {
         const comment = await Comment.findById(req.params.commentId);
-        if (!comment) {
-            return res.status(404).json({ error: 'Comentario no encontrado' });
-        }
-        
+        if (!comment) return res.status(404).json({ error: 'Comentario no encontrado' });
         const post = await Post.findById(comment.post_id);
-        
         if (comment.user_id !== req.session.userId && post.user_id !== req.session.userId) {
             return res.status(403).json({ error: 'No autorizado' });
         }
-        
         await comment.softDelete();
         res.redirect(`/posts/${post.id}#comments`);
     } catch (error) {
@@ -266,10 +211,7 @@ exports.deleteComment = async (req, res) => {
 exports.toggleComments = async (req, res) => {
     try {
         const post = await Post.findById(req.params.id);
-        if (!post || post.user_id !== req.session.userId) {
-            return res.status(403).json({ error: 'No autorizado' });
-        }
-        
+        if (!post || post.user_id !== req.session.userId) return res.status(403).json({ error: 'No autorizado' });
         await post.toggleComments();
         res.redirect(`/posts/${post.id}`);
     } catch (error) {
@@ -278,17 +220,14 @@ exports.toggleComments = async (req, res) => {
     }
 };
 
-// MÉTODO rateImage CORREGIDO - Actualiza en tiempo real
+// ========== MÉTODO rateImage CORREGIDO ==========
 exports.rateImage = async (req, res) => {
     try {
         const image = await Image.findById(req.params.imageId);
-        if (!image) {
-            return res.status(404).json({ error: 'Imagen no encontrada' });
-        }
+        if (!image) return res.status(404).json({ error: 'Imagen no encontrada' });
         
         const { value } = req.body;
         const ratingValue = parseInt(value);
-        
         if (isNaN(ratingValue) || ratingValue < 1 || ratingValue > 5) {
             return res.status(400).json({ error: 'Valoración debe ser entre 1 y 5' });
         }
@@ -311,6 +250,7 @@ exports.rateImage = async (req, res) => {
     }
 };
 
+// ========== MÉTODO markInterest CORREGIDO ==========
 exports.markInterest = async (req, res) => {
     try {
         const { imageId, postId } = req.body;
@@ -319,23 +259,16 @@ exports.markInterest = async (req, res) => {
         
         if (imageId) {
             const image = await Image.findById(imageId);
-            if (!image) {
-                return res.status(404).json({ error: 'Imagen no encontrada' });
-            }
+            if (!image) return res.status(404).json({ error: 'Imagen no encontrada' });
             targetPostId = image.post_id;
         }
         
         const post = await Post.findById(targetPostId);
-        if (!post) {
-            return res.status(404).json({ error: 'Publicación no encontrada' });
-        }
+        if (!post) return res.status(404).json({ error: 'Publicación no encontrada' });
         
         await post.markInterest(req.session.userId, targetImageId);
         
-        res.json({ 
-            success: true, 
-            message: 'Interés registrado. El autor ha sido notificado y puede contactarte.' 
-        });
+        res.json({ success: true, message: 'Interés registrado. El autor ha sido notificado y puede contactarte.' });
     } catch (error) {
         console.error(error);
         res.status(400).json({ error: error.message || 'Error al marcar interés' });
@@ -345,18 +278,11 @@ exports.markInterest = async (req, res) => {
 exports.reportPost = async (req, res) => {
     try {
         const post = await Post.findById(req.params.id);
-        if (!post) {
-            return res.status(404).json({ error: 'Publicación no encontrada' });
-        }
-        
-        if (post.user_id === req.session.userId) {
-            return res.status(403).json({ error: 'No puedes denunciar tu propia publicación' });
-        }
+        if (!post) return res.status(404).json({ error: 'Publicación no encontrada' });
+        if (post.user_id === req.session.userId) return res.status(403).json({ error: 'No puedes denunciar tu propia publicación' });
         
         const { reason, description } = req.body;
-        if (!reason) {
-            return res.status(400).json({ error: 'Debes seleccionar un motivo' });
-        }
+        if (!reason) return res.status(400).json({ error: 'Debes seleccionar un motivo' });
         
         await post.report(req.session.userId, reason, description);
         res.redirect(`/posts/${post.id}`);
@@ -369,18 +295,11 @@ exports.reportPost = async (req, res) => {
 exports.reportComment = async (req, res) => {
     try {
         const comment = await Comment.findById(req.params.commentId);
-        if (!comment) {
-            return res.status(404).json({ error: 'Comentario no encontrado' });
-        }
-        
-        if (comment.user_id === req.session.userId) {
-            return res.status(403).json({ error: 'No puedes denunciar tu propio comentario' });
-        }
+        if (!comment) return res.status(404).json({ error: 'Comentario no encontrado' });
+        if (comment.user_id === req.session.userId) return res.status(403).json({ error: 'No puedes denunciar tu propio comentario' });
         
         const { reason, description } = req.body;
-        if (!reason) {
-            return res.status(400).json({ error: 'Debes seleccionar un motivo' });
-        }
+        if (!reason) return res.status(400).json({ error: 'Debes seleccionar un motivo' });
         
         await comment.report(req.session.userId, reason, description);
         res.redirect(`/posts/${comment.post_id}#comments`);
@@ -394,9 +313,6 @@ exports.myReportedComments = async (req, res) => {
     console.log('📌 MY REPORTED COMMENTS - Usuario:', req.session.userId);
     try {
         const reportedComments = await Comment.findReportedByUser(req.session.userId);
-        
-        console.log('   Comentarios encontrados:', reportedComments ? reportedComments.length : 0);
-        
         const formattedReports = (reportedComments || []).map(report => ({
             id: report.id,
             comment_id: report.comment_id || report.id,

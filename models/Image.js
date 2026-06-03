@@ -35,7 +35,7 @@ class Image {
         return rows.length > 0 ? rows[0].value : null;
     }
 
-   
+    // ========== MÉTODO CORREGIDO ==========
     async addRating(userId, value) {
         const [postRows] = await pool.query('SELECT user_id FROM posts WHERE id = ?', [this.post_id]);
         
@@ -51,12 +51,7 @@ class Image {
             
             await this.updateAverageRating();
             
-            
-            try {
-                await Notification.create(postRows[0].user_id, 'rating', userId, this.id, this.post_id, null, null);
-            } catch (err) {
-                console.error('Error al crear notificación de rating:', err.message);
-            }
+            await Notification.create(postRows[0].user_id, 'rating', userId, this.id, this.post_id, null, null);
             
             return true;
         } catch (error) {
