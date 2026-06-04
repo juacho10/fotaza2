@@ -10,18 +10,18 @@ class Notification {
         this.image_id = data.image_id;
         this.post_id = data.post_id;
         this.message_id = data.message_id;
-        this.comment_id = data.comment_id;
         this.is_read = data.is_read || false;
         this.created_at = data.created_at;
         this.post_title = data.post_title;
         this.message_subject = data.message_subject;
     }
 
-    static async create(userId, type, sourceUserId, imageId = null, postId = null, messageId = null, commentId = null) {
+    
+    static async create(userId, type, sourceUserId, imageId = null, postId = null, messageId = null) {
         const [result] = await pool.query(
-            `INSERT INTO notifications (user_id, type, source_user_id, image_id, post_id, message_id, comment_id) 
-             VALUES (?, ?, ?, ?, ?, ?, ?)`,
-            [userId, type, sourceUserId, imageId, postId, messageId, commentId]
+            `INSERT INTO notifications (user_id, type, source_user_id, image_id, post_id, message_id) 
+             VALUES (?, ?, ?, ?, ?, ?)`,
+            [userId, type, sourceUserId, imageId, postId, messageId]
         );
         return result.insertId;
     }

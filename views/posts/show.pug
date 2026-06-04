@@ -227,152 +227,154 @@ block content
             button.btn.btn-secondary(type="button", data-bs-dismiss="modal") Cancelar
             button.btn.btn-primary(type="button", id="submitRating") Enviar valoración
 
-    block scripts
-      script.
-        let currentImageId = null;
-        let currentImageCard = null;
-        
-        document.querySelectorAll('.rate-btn').forEach(btn => {
-          btn.addEventListener('click', () => {
-            currentImageId = btn.dataset.imageId;
-            currentImageCard = btn.closest('.image-card');
-            new bootstrap.Modal(document.getElementById('rateModal')).show();
-          });
+   //  bloque scripts
+
+block scripts
+  script.
+    let currentImageId = null;
+    let currentImageCard = null;
+    
+    document.querySelectorAll('.rate-btn').forEach(btn => {
+      btn.addEventListener('click', () => {
+        currentImageId = btn.dataset.imageId;
+        currentImageCard = btn.closest('.image-card');
+        new bootstrap.Modal(document.getElementById('rateModal')).show();
+      });
+    });
+    
+    document.getElementById('submitRating')?.addEventListener('click', async () => {
+      const rating = document.querySelector('input[name="rating"]:checked')?.value;
+      if (!rating) {
+        alert('Selecciona una valoración');
+        return;
+      }
+      
+      try {
+        const response = await fetch(`/posts/images/${currentImageId}/rate`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ value: rating })
         });
         
-        document.getElementById('submitRating')?.addEventListener('click', async () => {
-          const rating = document.querySelector('input[name="rating"]:checked')?.value;
-          if (!rating) {
-            alert('Selecciona una valoración');
-            return;
+        const data = await response.json();
+        if (response.ok && data.success) {
+          const ratingContainer = currentImageCard.querySelector('.rating');
+          const avg = data.average_rating || 0;
+          const fullStars = Math.floor(avg);
+          const hasHalfStar = (avg - fullStars) >= 0.5;
+          
+          let starsHtml = '';
+          for(let i = 0; i < fullStars; i++) {
+            starsHtml += '<i class="bi bi-star-fill text-warning"></i>';
+          }
+          if(hasHalfStar) {
+            starsHtml += '<i class="bi bi-star-half text-warning"></i>';
+          }
+          for(let i = fullStars + (hasHalfStar ? 1 : 0); i < 5; i++) {
+            starsHtml += '<i class="bi bi-star text-secondary"></i>';
           }
           
-          try {
-            const response = await fetch(`/posts/images/${currentImageId}/rate`, {
-              method: 'POST',
-              headers: { 'Content-Type': 'application/json' },
-              body: JSON.stringify({ value: rating })
-            });
-            
-            const data = await response.json();
-            if (response.ok && data.success) {
-              const ratingContainer = currentImageCard.querySelector('.rating');
-              const avg = data.average_rating || 0;
-              const fullStars = Math.floor(avg);
-              const hasHalfStar = (avg - fullStars) >= 0.5;
-              
-              let starsHtml = '';
-              for(let i = 0; i < fullStars; i++) {
-                starsHtml += '<i class="bi bi-star-fill text-warning"></i>';
-              }
-              if(hasHalfStar) {
-                starsHtml += '<i class="bi bi-star-half text-warning"></i>';
-              }
-              for(let i = fullStars + (hasHalfStar ? 1 : 0); i < 5; i++) {
-                starsHtml += '<i class="bi bi-star text-secondary"></i>';
-              }
-              
-              ratingContainer.innerHTML = starsHtml + `<span class="ms-2 text-muted rating-count">(${data.rating_count || 0} valoraciones)</span>`;
-              
-              const postAvgSpan = document.getElementById('postAvgRating');
-              const postCountSpan = document.getElementById('postRatingCount');
-              if (postAvgSpan) {
-                postAvgSpan.textContent = data.post_avg_rating ? parseFloat(data.post_avg_rating).toFixed(1) : 'Sin valoraciones';
-              }
-              if (postCountSpan && data.post_rating_count) {
-                postCountSpan.textContent = data.post_rating_count;
-              }
-              
-              bootstrap.Modal.getInstance(document.getElementById('rateModal')).hide();
-              document.querySelectorAll('input[name="rating"]').forEach(radio => radio.checked = false);
-              
-              const toast = document.createElement('div');
-              toast.className = 'position-fixed bottom-0 end-0 p-3';
-              toast.style.zIndex = '11';
-              toast.innerHTML = `
-                <div class="toast show" role="alert">
-                  <div class="toast-header bg-success text-white">
-                    <strong class="me-auto">¡Valoración enviada!</strong>
-                    <button type="button" class="btn-close btn-close-white" data-bs-dismiss="toast"></button>
-                  </div>
-                  <div class="toast-body">
-                    Gracias por valorar esta imagen con ${rating} estrella(s).
-                  </div>
-                </div>
-              `;
-              document.body.appendChild(toast);
-              setTimeout(() => toast.remove(), 3000);
-            } else {
-              alert(data.error || 'Error al valorar');
-            }
-          } catch (error) {
-            alert('Error de conexión');
+          ratingContainer.innerHTML = starsHtml + `<span class="ms-2 text-muted rating-count">(${data.rating_count || 0} valoraciones)</span>`;
+          
+          const postAvgSpan = document.getElementById('postAvgRating');
+          const postCountSpan = document.getElementById('postRatingCount');
+          if (postAvgSpan) {
+            postAvgSpan.textContent = data.post_avg_rating ? parseFloat(data.post_avg_rating).toFixed(1) : 'Sin valoraciones';
           }
-        });
-        
-        document.querySelectorAll('.interest-btn').forEach(btn => {
-          btn.addEventListener('click', async () => {
-            const imageId = btn.dataset.imageId;
-            try {
-              const response = await fetch(`/posts/images/${imageId}/interest`, { method: 'POST' });
-              if (response.ok) {
-                alert('Se ha notificado al autor de tu interés');
-                btn.disabled = true;
-                btn.innerHTML = '<i class="bi bi-heart-fill"></i> Interés enviado';
-              } else {
-                const data = await response.json();
-                alert(data.error || 'Error al marcar interés');
-              }
-            } catch (error) {
-              alert('Error de conexión');
-            }
+          if (postCountSpan && data.post_rating_count) {
+            postCountSpan.textContent = data.post_rating_count;
+          }
+          
+          bootstrap.Modal.getInstance(document.getElementById('rateModal')).hide();
+          document.querySelectorAll('input[name="rating"]').forEach(radio => radio.checked = false);
+          
+          const toast = document.createElement('div');
+          toast.className = 'position-fixed bottom-0 end-0 p-3';
+          toast.style.zIndex = '11';
+          toast.innerHTML = `
+            <div class="toast show" role="alert">
+              <div class="toast-header bg-success text-white">
+                <strong class="me-auto">¡Valoración enviada!</strong>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="toast"></button>
+              </div>
+              <div class="toast-body">
+                Gracias por valorar esta imagen con ${rating} estrella(s).
+              </div>
+            </div>
+          `;
+          document.body.appendChild(toast);
+          setTimeout(() => toast.remove(), 3000);
+        } else {
+          alert(data.error || 'Error al valorar');
+        }
+      } catch (error) {
+        alert('Error de conexión');
+      }
+    });
+    
+    document.querySelectorAll('.interest-btn').forEach(btn => {
+      btn.addEventListener('click', async () => {
+        const imageId = btn.dataset.imageId;
+        try {
+          const response = await fetch(`/posts/images/${imageId}/interest`, { method: 'POST' });
+          if (response.ok) {
+            alert('Se ha notificado al autor de tu interés');
+            btn.disabled = true;
+            btn.innerHTML = '<i class="bi bi-heart-fill"></i> Interés enviado';
+          } else {
+            const data = await response.json();
+            alert(data.error || 'Error al marcar interés');
+          }
+        } catch (error) {
+          alert('Error de conexión');
+        }
+      });
+    });
+    
+    document.querySelectorAll('.interest-btn-post').forEach(btn => {
+      btn.addEventListener('click', async () => {
+        const postId = btn.dataset.postId;
+        try {
+          const response = await fetch(`/posts/${postId}/interest`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ postId: postId })
           });
-        });
+          const data = await response.json();
+          if (response.ok) {
+            alert('Se ha notificado al autor de tu interés');
+            btn.disabled = true;
+            btn.innerHTML = '<i class="bi bi-heart-fill"></i> Interés enviado';
+          } else {
+            alert(data.error || 'Error al marcar interés');
+          }
+        } catch (error) {
+          alert('Error de conexión');
+        }
+      });
+    });
+    
+    document.querySelectorAll('.report-comment-btn').forEach(btn => {
+      btn.addEventListener('click', async () => {
+        const commentId = btn.dataset.commentId;
+        const reason = prompt('Motivo de la denuncia (spam, inapropiado, acoso, etc.):');
+        if (!reason) return;
+        const description = prompt('Describe el motivo (opcional):');
         
-        document.querySelectorAll('.interest-btn-post').forEach(btn => {
-          btn.addEventListener('click', async () => {
-            const postId = btn.dataset.postId;
-            try {
-              const response = await fetch(`/posts/${postId}/interest`, {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ postId: postId })
-              });
-              const data = await response.json();
-              if (response.ok) {
-                alert('Se ha notificado al autor de tu interés');
-                btn.disabled = true;
-                btn.innerHTML = '<i class="bi bi-heart-fill"></i> Interés enviado';
-              } else {
-                alert(data.error || 'Error al marcar interés');
-              }
-            } catch (error) {
-              alert('Error de conexión');
-            }
+        try {
+          const response = await fetch(`/posts/comments/${commentId}/report`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ reason, description })
           });
-        });
-        
-        document.querySelectorAll('.report-comment-btn').forEach(btn => {
-          btn.addEventListener('click', async () => {
-            const commentId = btn.dataset.commentId;
-            const reason = prompt('Motivo de la denuncia (spam, inapropiado, acoso, etc.):');
-            if (!reason) return;
-            const description = prompt('Describe el motivo (opcional):');
-            
-            try {
-              const response = await fetch(`/posts/comments/${commentId}/report`, {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ reason, description })
-              });
-              if (response.ok) {
-                alert('Denuncia enviada. Gracias por ayudar a mantener la comunidad segura.');
-              } else {
-                const data = await response.json();
-                alert(data.error || 'Error al denunciar');
-              }
-            } catch (error) {
-              alert('Error de conexión');
-            }
-          });
-        });
+          if (response.ok) {
+            alert('Denuncia enviada. Gracias por ayudar a mantener la comunidad segura.');
+          } else {
+            const data = await response.json();
+            alert(data.error || 'Error al denunciar');
+          }
+        } catch (error) {
+          alert('Error de conexión');
+        }
+      });
+    });

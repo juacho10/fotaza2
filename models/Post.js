@@ -40,7 +40,7 @@ class Post {
         return new Post(rows[0]);
     }
 
-    static async findAllHome(limit = 20, offset = 0) {
+    static async findAllHome(limit = 20) {
         const [bestRated] = await pool.query(`
             SELECT p.*, u.username
             FROM posts p
@@ -262,7 +262,6 @@ class Post {
         return rows;
     }
 
-    // ========== MÉTODO CORREGIDO ==========
     async addComment(userId, content) {
         const [result] = await pool.query(
             'INSERT INTO comments (user_id, post_id, content) VALUES (?, ?, ?)',
@@ -295,7 +294,6 @@ class Post {
         return rows.length > 0;
     }
 
-    // ========== MÉTODO CORREGIDO ==========
     async markInterest(userId, imageId = null) {
         if (this.user_id === userId) {
             throw new Error('No puedes marcar interés en tu propia publicación');

@@ -14,7 +14,6 @@ class Message {
         this.receiver_username = data.receiver_username;
     }
 
-    // ========== MÉTODO CORREGIDO ==========
     static async create(senderId, receiverId, subject, content) {
         const [result] = await pool.query(
             `INSERT INTO messages (sender_id, receiver_id, subject, content) 

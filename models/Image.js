@@ -35,7 +35,6 @@ class Image {
         return rows.length > 0 ? rows[0].value : null;
     }
 
-    // ========== MÉTODO CORREGIDO ==========
     async addRating(userId, value) {
         const [postRows] = await pool.query('SELECT user_id FROM posts WHERE id = ?', [this.post_id]);
         
