@@ -220,7 +220,6 @@ exports.toggleComments = async (req, res) => {
     }
 };
 
-// ========== MÉTODO rateImage  ==========
 exports.rateImage = async (req, res) => {
     try {
         const image = await Image.findById(req.params.imageId);
@@ -250,7 +249,6 @@ exports.rateImage = async (req, res) => {
     }
 };
 
-// ========== MÉTODO markInterest  ==========
 exports.markInterest = async (req, res) => {
     try {
         const { imageId, postId } = req.body;
