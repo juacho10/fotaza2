@@ -1,9 +1,19 @@
 const express = require('express');
 const session = require('express-session');
-const MySQLStore = require('express-mysql-session')(session); // ← AGREGAR ESTO
+const MySQLStore = require('express-mysql-session')(session);
 const path = require('path');
 const methodOverride = require('method-override');
 require('dotenv').config();
+
+// ========== AGREGAR ESTO PARA DEBUG ==========
+console.log('========== CONEXIÓN A BD ==========');
+console.log('DB_HOST:', process.env.DB_HOST);
+console.log('DB_PORT:', process.env.DB_PORT);
+console.log('DB_USER:', process.env.DB_USER);
+console.log('DB_NAME:', process.env.DB_NAME);
+console.log('NODE_ENV:', process.env.NODE_ENV);
+console.log('====================================');
+// ========== FIN DEBUG ==========
 
 const authRoutes = require('../routes/auth');
 const postRoutes = require('../routes/posts');
@@ -28,7 +38,7 @@ app.use(express.json());
 app.use(methodOverride('_method'));
 app.use(express.static(path.join(__dirname, '../public')));
 
-// ========== NUEVO: Configurar MySQL Store para sesiones ==========
+// Configurar MySQL Store para sesiones
 const sessionStore = new MySQLStore({
     host: process.env.DB_HOST,
     port: parseInt(process.env.DB_PORT) || 10153,
@@ -46,16 +56,16 @@ const sessionStore = new MySQLStore({
     }
 });
 
-// Configuración de sesión CORREGIDA con store
+// Configuración de sesión con store
 app.use(session({
     secret: process.env.SESSION_SECRET || 'mi-secreto-super-seguro',
-    store: sessionStore,  // ← CLAVE: las sesiones se guardan en MySQL
+    store: sessionStore,
     resave: false,
     saveUninitialized: false,
     cookie: {
         maxAge: 30 * 24 * 60 * 60 * 1000,
         httpOnly: true,
-        secure: true,  // En Vercel siempre es HTTPS
+        secure: true,
         sameSite: 'lax'
     }
 }));
