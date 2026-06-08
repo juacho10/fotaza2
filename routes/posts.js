@@ -16,7 +16,7 @@ router.delete('/comments/:commentId', postController.deleteComment);
 router.post('/:id/comments/toggle', postController.toggleComments);
 router.post('/images/:imageId/rate', postController.rateImage);
 router.post('/images/:imageId/interest', postController.markInterest);
-router.post('/:id/interest', postController.markInterest);
+router.post('/:id/interest', postController.markInterest);  // ← RUTA AGREGADA
 router.post('/:id/report', postController.reportPost);
 router.post('/comments/:commentId/report', postController.reportComment);
 

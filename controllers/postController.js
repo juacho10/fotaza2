@@ -249,24 +249,41 @@ exports.rateImage = async (req, res) => {
     }
 };
 
+// ========== MÉTODO MARKINTEREST CORREGIDO ==========
 exports.markInterest = async (req, res) => {
     try {
-        const { imageId, postId } = req.body;
-        let targetPostId = postId;
+        // Obtener postId de req.params (para ruta /:id/interest) o de req.body (para ruta /images/:imageId/interest)
+        const postIdFromParams = req.params.id;
+        const { imageId, postId: postIdFromBody } = req.body;
+        
+        let targetPostId = postIdFromParams || postIdFromBody;
         let targetImageId = imageId || null;
         
+        // Si hay imageId, obtener el post_id de la imagen
         if (imageId) {
             const image = await Image.findById(imageId);
-            if (!image) return res.status(404).json({ error: 'Imagen no encontrada' });
+            if (!image) {
+                return res.status(404).json({ error: 'Imagen no encontrada' });
+            }
             targetPostId = image.post_id;
         }
         
+        // Si no hay targetPostId, error
+        if (!targetPostId) {
+            return res.status(400).json({ error: 'No se especificó qué publicación o imagen' });
+        }
+        
         const post = await Post.findById(targetPostId);
-        if (!post) return res.status(404).json({ error: 'Publicación no encontrada' });
+        if (!post) {
+            return res.status(404).json({ error: 'Publicación no encontrada' });
+        }
         
         await post.markInterest(req.session.userId, targetImageId);
         
-        res.json({ success: true, message: 'Interés registrado. El autor ha sido notificado y puede contactarte.' });
+        res.json({ 
+            success: true, 
+            message: 'Interés registrado. El autor ha sido notificado y puede contactarte.' 
+        });
     } catch (error) {
         console.error(error);
         res.status(400).json({ error: error.message || 'Error al marcar interés' });
