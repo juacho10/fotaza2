@@ -2,7 +2,7 @@
   "version": 2,
   "functions": {
     "api/index.js": {
-      "maxDuration": 10
+      "maxDuration": 30
     }
   },
   "rewrites": [
@@ -11,7 +11,6 @@
       "destination": "/api/index"
     }
   ],
-  "env": {
-    "NODE_ENV": "production"
-  }
+  "buildCommand": "npm run vercel-build",
+  "installCommand": "npm install --legacy-peer-deps"
 }
