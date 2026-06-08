@@ -5,16 +5,6 @@ const path = require('path');
 const methodOverride = require('method-override');
 require('dotenv').config();
 
-// ========== AGREGAR ESTO PARA DEBUG ==========
-console.log('========== CONEXIÓN A BD ==========');
-console.log('DB_HOST:', process.env.DB_HOST);
-console.log('DB_PORT:', process.env.DB_PORT);
-console.log('DB_USER:', process.env.DB_USER);
-console.log('DB_NAME:', process.env.DB_NAME);
-console.log('NODE_ENV:', process.env.NODE_ENV);
-console.log('====================================');
-// ========== FIN DEBUG ==========
-
 const authRoutes = require('../routes/auth');
 const postRoutes = require('../routes/posts');
 const userRoutes = require('../routes/users');
