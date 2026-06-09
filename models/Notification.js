@@ -16,7 +16,6 @@ class Notification {
         this.message_subject = data.message_subject;
     }
 
-    
     static async create(userId, type, sourceUserId, imageId = null, postId = null, messageId = null) {
         const [result] = await pool.query(
             `INSERT INTO notifications (user_id, type, source_user_id, image_id, post_id, message_id) 
