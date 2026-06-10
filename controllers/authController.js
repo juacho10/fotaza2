@@ -5,6 +5,7 @@ exports.showLogin = (req, res) => {
     res.render('auth/login', { title: 'Iniciar sesión', error });
 };
 
+
 exports.login = async (req, res) => {
     console.log('🔍 ===== LOGIN =====');
     console.log('🔍 Email:', req.body.email);
@@ -22,12 +23,28 @@ exports.login = async (req, res) => {
         
         console.log('✅ Usuario autenticado:', user.id, user.username);
         
+        // Generar token JWT
+        const jwt = require('jsonwebtoken');
+        const token = jwt.sign(
+            { id: user.id, username: user.username, email: user.email, role: user.role },
+            process.env.JWT_SECRET || 'mi_jwt_secret_super_seguro_para_fotaza2',
+            { expiresIn: '30d' }
+        );
+        
         // Guardar en sesión
         req.session.userId = user.id;
         req.session.userRole = user.role;
         req.session.userActive = user.is_active;
         
-        // Guardar explícitamente antes de redirigir
+        // Guardar token en cookie
+        res.cookie('token', token, {
+            httpOnly: true,
+            secure: true,
+            sameSite: 'lax',
+            maxAge: 30 * 24 * 60 * 60 * 1000 // 30 días
+        });
+        
+        // Guardar sesión explícitamente
         req.session.save((err) => {
             if (err) {
                 console.error('❌ Error guardando sesión:', err);
@@ -37,7 +54,7 @@ exports.login = async (req, res) => {
                 });
             }
             console.log('✅ Sesión guardada correctamente');
-            console.log('✅ Redirigiendo a /');
+            console.log('✅ Token guardado en cookie');
             res.redirect('/');
         });
     } else {
