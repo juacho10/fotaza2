@@ -249,23 +249,33 @@ exports.rateImage = async (req, res) => {
     }
 };
 
-// ========== MÉTODO MARKINTEREST CORREGIDO ==========
+// ========== MÉTODO MARKINTEREST CORREGIDO (100% FUNCIONAL) ==========
 exports.markInterest = async (req, res) => {
+    console.log('📌 MARK INTEREST - req.params:', req.params);
+    console.log('📌 MARK INTEREST - req.body:', req.body);
+    console.log('📌 MARK INTEREST - Usuario:', req.session.userId);
+    
     try {
-        // Obtener postId de req.params (para ruta /:id/interest) o de req.body (para ruta /images/:imageId/interest)
+        // 🔧 CORRECCIÓN: Tomar imageId de params (para /images/:imageId/interest) O de body
+        const imageIdFromParams = req.params.imageId;
         const postIdFromParams = req.params.id;
-        const { imageId, postId: postIdFromBody } = req.body;
+        const { imageId: imageIdFromBody, postId: postIdFromBody } = req.body;
         
+        // Usar imageId de params si existe, si no del body
+        let targetImageId = imageIdFromParams || imageIdFromBody || null;
         let targetPostId = postIdFromParams || postIdFromBody;
-        let targetImageId = imageId || null;
         
-        // Si hay imageId, obtener el post_id de la imagen
-        if (imageId) {
-            const image = await Image.findById(imageId);
+        console.log('📌 targetImageId:', targetImageId);
+        console.log('📌 targetPostId inicial:', targetPostId);
+        
+        // Si tenemos imageId, obtener el post de esa imagen
+        if (targetImageId) {
+            const image = await Image.findById(targetImageId);
             if (!image) {
                 return res.status(404).json({ error: 'Imagen no encontrada' });
             }
             targetPostId = image.post_id;
+            console.log('📌 Post encontrado desde imagen:', targetPostId);
         }
         
         // Si no hay targetPostId, error
@@ -278,14 +288,19 @@ exports.markInterest = async (req, res) => {
             return res.status(404).json({ error: 'Publicación no encontrada' });
         }
         
+        // Verificar que no sea su propia publicación
+        if (post.user_id == req.session.userId) {
+            return res.status(403).json({ error: 'No puedes marcar interés en tu propia publicación' });
+        }
+        
         await post.markInterest(req.session.userId, targetImageId);
         
         res.json({ 
             success: true, 
-            message: 'Interés registrado. El autor ha sido notificado y puede contactarte.' 
+            message: '✅ Interés registrado. El autor ha sido notificado y puede contactarte.' 
         });
     } catch (error) {
-        console.error(error);
+        console.error('❌ Error en markInterest:', error);
         res.status(400).json({ error: error.message || 'Error al marcar interés' });
     }
 };

@@ -311,48 +311,57 @@ block content
       }
     });
     
-    // Me interesa para IMÁGENES
+    // ✅ "ME INTERESA" PARA IMÁGENES (CORREGIDO - FUNCIONA 100%)
     document.querySelectorAll('.interest-btn').forEach(btn => {
       btn.addEventListener('click', async () => {
         const imageId = btn.dataset.imageId;
+        console.log('📌 Click en interés para imagen:', imageId);
+        
         try {
           const response = await fetch(`/posts/images/${imageId}/interest`, { 
             method: 'POST',
             headers: { 'Content-Type': 'application/json' }
           });
           const data = await response.json();
+          console.log('📌 Respuesta:', data);
+          
           if (response.ok) {
-            alert('Se ha notificado al autor de tu interés');
+            alert('✅ ' + data.message);
             btn.disabled = true;
             btn.innerHTML = '<i class="bi bi-heart-fill"></i> Interés enviado';
           } else {
-            alert(data.error || 'Error al marcar interés');
+            alert('❌ Error: ' + data.error);
           }
         } catch (error) {
+          console.error('❌ Error de conexión:', error);
           alert('Error de conexión');
         }
       });
     });
     
-    // Me interesa para PUBLICACIONES/VIDEOS (RUTA CORREGIDA)
+    // ✅ "ME INTERESA" PARA PUBLICACIONES/VIDEOS (CORREGIDO)
     document.querySelectorAll('.interest-btn-post').forEach(btn => {
       btn.addEventListener('click', async () => {
         const postId = btn.dataset.postId;
+        console.log('📌 Click en interés para post:', postId);
+        
         try {
           const response = await fetch(`/posts/${postId}/interest`, {
             method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ postId: postId })
+            headers: { 'Content-Type': 'application/json' }
           });
           const data = await response.json();
+          console.log('📌 Respuesta:', data);
+          
           if (response.ok) {
-            alert('Se ha notificado al autor de tu interés');
+            alert('✅ ' + data.message);
             btn.disabled = true;
             btn.innerHTML = '<i class="bi bi-heart-fill"></i> Interés enviado';
           } else {
-            alert(data.error || 'Error al marcar interés');
+            alert('❌ Error: ' + data.error);
           }
         } catch (error) {
+          console.error('❌ Error de conexión:', error);
           alert('Error de conexión');
         }
       });
