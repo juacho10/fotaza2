@@ -12,7 +12,7 @@ html(lang="es")
       .container
         a.navbar-brand(href="/")
           i.bi.bi-camera.me-2
-          | Fotaza 
+          | Fotaza 2
         button.navbar-toggler(type="button", data-bs-toggle="collapse", data-bs-target="#navbarNav")
           span.navbar-toggler-icon
         .collapse.navbar-collapse(id="navbarNav")
@@ -104,9 +104,18 @@ html(lang="es")
     script(src="/js/main.js")
     
     script.
+      console.log('🔍 === LAYOUT CARGADO ===');
+      console.log('🔍 currentUser:', typeof currentUser !== 'undefined' ? currentUser : 'no definido');
+      
       async function updateUnreadCount() {
         try {
-          const response = await fetch('/api/notifications/unread-count');
+          const response = await fetch('/api/notifications/unread-count', {
+            method: 'GET',
+            credentials: 'include',
+            headers: {
+              'Content-Type': 'application/json'
+            }
+          });
           const data = await response.json();
           const badge = document.getElementById('unread-badge');
           if (data.count > 0) {
@@ -116,13 +125,19 @@ html(lang="es")
             badge.style.display = 'none';
           }
         } catch (error) {
-          console.error('Error:', error);
+          console.error('Error al cargar notificaciones:', error);
         }
       }
       
       async function updateMessageCount() {
         try {
-          const response = await fetch('/api/messages/unread-count');
+          const response = await fetch('/api/messages/unread-count', {
+            method: 'GET',
+            credentials: 'include',
+            headers: {
+              'Content-Type': 'application/json'
+            }
+          });
           const data = await response.json();
           const badge = document.getElementById('message-badge');
           if (data.count > 0) {
@@ -136,6 +151,28 @@ html(lang="es")
         }
       }
       
+      async function verificarSesion() {
+        try {
+          const response = await fetch('/api/auth/verify', {
+            method: 'GET',
+            credentials: 'include',
+            headers: {
+              'Content-Type': 'application/json'
+            }
+          });
+          const data = await response.json();
+          console.log('🔍 Verificación de sesión:', data);
+          if (data.valid && data.user) {
+            console.log('✅ Usuario autenticado:', data.user.username);
+          } else {
+            console.log('❌ No autenticado');
+          }
+        } catch (error) {
+          console.error('Error verificando sesión:', error);
+        }
+      }
+      
+      // Inicializar contadores
       if (document.getElementById('unread-badge')) {
         updateUnreadCount();
         setInterval(updateUnreadCount, 30000);
@@ -145,3 +182,6 @@ html(lang="es")
         updateMessageCount();
         setInterval(updateMessageCount, 30000);
       }
+      
+      // Verificar sesión al cargar
+      verificarSesion();

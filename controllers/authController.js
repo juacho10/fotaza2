@@ -6,6 +6,9 @@ exports.showLogin = (req, res) => {
 };
 
 exports.login = async (req, res) => {
+    console.log('🔍 ===== LOGIN =====');
+    console.log('🔍 Email:', req.body.email);
+    
     const { email, password } = req.body;
     const user = await User.findByEmail(email);
     
@@ -16,11 +19,29 @@ exports.login = async (req, res) => {
                 error: 'Tu cuenta ha sido desactivada. Contacta al administrador.' 
             });
         }
+        
+        console.log('✅ Usuario autenticado:', user.id, user.username);
+        
+        // Guardar en sesión
         req.session.userId = user.id;
         req.session.userRole = user.role;
         req.session.userActive = user.is_active;
-        res.redirect('/');
+        
+        // Guardar explícitamente antes de redirigir
+        req.session.save((err) => {
+            if (err) {
+                console.error('❌ Error guardando sesión:', err);
+                return res.render('auth/login', { 
+                    title: 'Iniciar sesión', 
+                    error: 'Error al iniciar sesión. Intenta nuevamente.' 
+                });
+            }
+            console.log('✅ Sesión guardada correctamente');
+            console.log('✅ Redirigiendo a /');
+            res.redirect('/');
+        });
     } else {
+        console.log('❌ Credenciales inválidas');
         res.render('auth/login', { title: 'Iniciar sesión', error: 'Email o contraseña incorrectos' });
     }
 };
@@ -54,6 +75,8 @@ exports.register = async (req, res) => {
 };
 
 exports.logout = (req, res) => {
-    req.session.destroy();
-    res.redirect('/');
+    req.session.destroy((err) => {
+        if (err) console.error('Error destruyendo sesión:', err);
+        res.redirect('/');
+    });
 };
