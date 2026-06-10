@@ -227,11 +227,12 @@ block content
             button.btn.btn-secondary(type="button", data-bs-dismiss="modal") Cancelar
             button.btn.btn-primary(type="button", id="submitRating") Enviar valoración
 
-  //- SCRIPTS (dentro del bloque content)
+  //- SCRIPTS
   script.
     let currentImageId = null;
     let currentImageCard = null;
     
+    // Valorar imagen
     document.querySelectorAll('.rate-btn').forEach(btn => {
       btn.addEventListener('click', () => {
         currentImageId = btn.dataset.imageId;
@@ -310,17 +311,21 @@ block content
       }
     });
     
+    // Me interesa para IMÁGENES
     document.querySelectorAll('.interest-btn').forEach(btn => {
       btn.addEventListener('click', async () => {
         const imageId = btn.dataset.imageId;
         try {
-          const response = await fetch(`/posts/images/${imageId}/interest`, { method: 'POST' });
+          const response = await fetch(`/posts/images/${imageId}/interest`, { 
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' }
+          });
+          const data = await response.json();
           if (response.ok) {
             alert('Se ha notificado al autor de tu interés');
             btn.disabled = true;
             btn.innerHTML = '<i class="bi bi-heart-fill"></i> Interés enviado';
           } else {
-            const data = await response.json();
             alert(data.error || 'Error al marcar interés');
           }
         } catch (error) {
@@ -329,6 +334,7 @@ block content
       });
     });
     
+    // Me interesa para PUBLICACIONES/VIDEOS (RUTA CORREGIDA)
     document.querySelectorAll('.interest-btn-post').forEach(btn => {
       btn.addEventListener('click', async () => {
         const postId = btn.dataset.postId;
@@ -352,6 +358,7 @@ block content
       });
     });
     
+    // Denunciar comentario
     document.querySelectorAll('.report-comment-btn').forEach(btn => {
       btn.addEventListener('click', async () => {
         const commentId = btn.dataset.commentId;
