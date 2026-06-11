@@ -151,27 +151,6 @@ html(lang="es")
         }
       }
       
-      async function verificarSesion() {
-        try {
-          const response = await fetch('/api/auth/verify', {
-            method: 'GET',
-            credentials: 'include',
-            headers: {
-              'Content-Type': 'application/json'
-            }
-          });
-          const data = await response.json();
-          console.log('🔍 Verificación de sesión:', data);
-          if (data.valid && data.user) {
-            console.log('✅ Usuario autenticado:', data.user.username);
-          } else {
-            console.log('❌ No autenticado');
-          }
-        } catch (error) {
-          console.error('Error verificando sesión:', error);
-        }
-      }
-      
       // Inicializar contadores
       if (document.getElementById('unread-badge')) {
         updateUnreadCount();
@@ -182,6 +161,3 @@ html(lang="es")
         updateMessageCount();
         setInterval(updateMessageCount, 30000);
       }
-      
-      // Verificar sesión al cargar
-      verificarSesion();
