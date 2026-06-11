@@ -1,91 +1,82 @@
-const express = require('express');
-const session = require('express-session');
-const MySQLStore = require('express-mysql-session')(session);
-const path = require('path');
-const methodOverride = require('method-override');
-require('dotenv').config();
+const User = require('../models/User');
 
-const authRoutes = require('../routes/auth');
-const postRoutes = require('../routes/posts');
-const userRoutes = require('../routes/users');
-const searchRoutes = require('../routes/search');
-const adminRoutes = require('../routes/admin');
-const apiRoutes = require('../routes/api');
-const apiAuthRoutes = require('../routes/api-auth');
+exports.showLogin = (req, res) => {
+    const error = req.query.error;
+    res.render('auth/login', { title: 'Iniciar sesión', error });
+};
 
-const { setUserLocals } = require('../middlewares/authMiddleware');
-const { verifyToken } = require('../middlewares/jwtAuth');
+exports.login = async (req, res) => {
+    console.log('🔍 ===== LOGIN =====');
+    console.log('🔍 Email:', req.body.email);
+    
+    const { email, password } = req.body;
+    const user = await User.findByEmail(email);
+    
+    if (user && await user.verifyPassword(password)) {
+        if (!user.is_active) {
+            return res.render('auth/login', { 
+                title: 'Iniciar sesión', 
+                error: 'Tu cuenta ha sido desactivada. Contacta al administrador.' 
+            });
+        }
+        
+        console.log('✅ Usuario autenticado:', user.id, user.username);
+        
+        // Guardar en sesión
+        req.session.userId = user.id;
+        req.session.userRole = user.role;
+        req.session.userActive = user.is_active;
+        
+        // Guardar sesión explícitamente
+        req.session.save((err) => {
+            if (err) {
+                console.error('❌ Error guardando sesión:', err);
+                return res.render('auth/login', { 
+                    title: 'Iniciar sesión', 
+                    error: 'Error al iniciar sesión. Intenta nuevamente.' 
+                });
+            }
+            console.log('✅ Sesión guardada correctamente');
+            console.log('✅ Redirigiendo a /');
+            res.redirect('/');
+        });
+    } else {
+        console.log('❌ Credenciales inválidas');
+        res.render('auth/login', { title: 'Iniciar sesión', error: 'Email o contraseña incorrectos' });
+    }
+};
 
-const app = express();
+exports.showRegister = (req, res) => {
+    res.render('auth/register', { title: 'Registrarse' });
+};
 
-app.set('view engine', 'pug');
-app.set('views', path.join(__dirname, '../views'));
-
-app.set('trust proxy', 1);
-app.use(express.urlencoded({ extended: true }));
-app.use(express.json());
-app.use(methodOverride('_method'));
-app.use(express.static(path.join(__dirname, '../public')));
-
-const sessionStore = new MySQLStore({
-    host: process.env.DB_HOST,
-    port: parseInt(process.env.DB_PORT) || 10153,
-    user: process.env.DB_USER,
-    password: process.env.DB_PASSWORD,
-    database: process.env.DB_NAME,
-    ssl: { rejectUnauthorized: false },
-    schema: {
-        tableName: 'sessions',
-        columnNames: {
-            session_id: 'session_id',
-            expires: 'expires',
-            data: 'data'
+exports.register = async (req, res) => {
+    const { username, email, password, confirm_password } = req.body;
+    
+    if (password !== confirm_password) {
+        return res.render('auth/register', { title: 'Registrarse', error: 'Las contraseñas no coinciden' });
+    }
+    
+    if (password.length < 6) {
+        return res.render('auth/register', { title: 'Registrarse', error: 'La contraseña debe tener al menos 6 caracteres' });
+    }
+    
+    try {
+        await User.create({ username, email, password });
+        res.redirect('/login');
+    } catch (error) {
+        if (error.code === 'ER_DUP_ENTRY') {
+            res.render('auth/register', { title: 'Registrarse', error: 'El email o nombre de usuario ya existe' });
+        } else {
+            console.error(error);
+            res.render('auth/register', { title: 'Registrarse', error: 'Error al registrar usuario' });
         }
     }
-});
+};
 
-app.use(session({
-    secret: process.env.SESSION_SECRET || 'mi-secreto-super-seguro',
-    store: sessionStore,
-    resave: false,
-    saveUninitialized: false,
-    cookie: {
-        maxAge: 30 * 24 * 60 * 60 * 1000,
-        httpOnly: true,
-        secure: true,
-        sameSite: 'lax'
-    }
-}));
-
-app.use(verifyToken);
-app.use(setUserLocals);
-
-app.use('/', authRoutes);
-app.use('/posts', postRoutes);
-app.use('/users', userRoutes);
-app.use('/search', searchRoutes);
-app.use('/admin', adminRoutes);
-app.use('/api', apiRoutes);
-app.use('/api/auth', apiAuthRoutes);
-
-app.get('/', async (req, res) => {
-    try {
-        const Post = require('../models/Post');
-        const posts = await Post.findAllHome(20);
-        res.render('index', { posts, title: 'Inicio' });
-    } catch (error) {
-        console.error(error);
-        res.status(500).render('500', { title: 'Error del servidor' });
-    }
-});
-
-app.use((req, res) => {
-    res.status(404).render('404', { title: 'Página no encontrada' });
-});
-
-app.use((err, req, res, next) => {
-    console.error(err.stack);
-    res.status(500).render('500', { title: 'Error del servidor' });
-});
-
-module.exports = app;
+exports.logout = (req, res) => {
+    req.session.destroy((err) => {
+        if (err) console.error('Error destruyendo sesión:', err);
+        res.redirect('/');
+    });
+};
