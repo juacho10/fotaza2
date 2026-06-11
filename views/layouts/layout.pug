@@ -105,27 +105,23 @@ html(lang="es")
     
     script.
       console.log('🔍 === LAYOUT CARGADO ===');
-      console.log('🔍 currentUser:', typeof currentUser !== 'undefined' ? currentUser : 'no definido');
       
       async function updateUnreadCount() {
         try {
           const response = await fetch('/api/notifications/unread-count', {
             method: 'GET',
-            credentials: 'include',
-            headers: {
-              'Content-Type': 'application/json'
-            }
+            credentials: 'include'
           });
           const data = await response.json();
           const badge = document.getElementById('unread-badge');
-          if (data.count > 0) {
+          if (badge && data.count > 0) {
             badge.textContent = data.count > 99 ? '99+' : data.count;
             badge.style.display = 'inline-block';
-          } else {
+          } else if (badge) {
             badge.style.display = 'none';
           }
         } catch (error) {
-          console.error('Error al cargar notificaciones:', error);
+          console.error('Error:', error);
         }
       }
       
@@ -133,25 +129,21 @@ html(lang="es")
         try {
           const response = await fetch('/api/messages/unread-count', {
             method: 'GET',
-            credentials: 'include',
-            headers: {
-              'Content-Type': 'application/json'
-            }
+            credentials: 'include'
           });
           const data = await response.json();
           const badge = document.getElementById('message-badge');
-          if (data.count > 0) {
+          if (badge && data.count > 0) {
             badge.textContent = data.count > 99 ? '99+' : data.count;
             badge.style.display = 'inline-block';
-          } else {
+          } else if (badge) {
             badge.style.display = 'none';
           }
         } catch (error) {
-          console.error('Error al cargar mensajes:', error);
+          console.error('Error:', error);
         }
       }
       
-      // Inicializar contadores
       if (document.getElementById('unread-badge')) {
         updateUnreadCount();
         setInterval(updateUnreadCount, 30000);

@@ -68,30 +68,7 @@ app.use('/admin', adminRoutes);
 app.use('/api', apiRoutes);
 app.use('/api/auth', apiAuthRoutes);
 
-// ========== RUTA PRINCIPAL CORREGIDA ==========
 app.get('/', async (req, res) => {
-    console.log('🔍 === RUTA PRINCIPAL ===');
-    console.log('🔍 session.userId:', req.session?.userId);
-    
-    // FORZAR RECARGA DEL USUARIO
-    if (req.session?.userId) {
-        const User = require('../models/User');
-        const user = await User.findById(req.session.userId);
-        if (user) {
-            res.locals.currentUser = {
-                id: user.id,
-                username: user.username,
-                email: user.email,
-                role: user.role,
-                avatar: user.avatar,
-                is_active: user.is_active
-            };
-            res.locals.isAdmin = user.role === 'admin';
-            res.locals.isValidator = user.role === 'admin' || user.role === 'validator';
-            console.log('✅ Usuario forzado en raíz:', user.username);
-        }
-    }
-    
     try {
         const Post = require('../models/Post');
         const posts = await Post.findAllHome(20);
