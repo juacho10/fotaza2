@@ -22,7 +22,6 @@ exports.login = async (req, res) => {
         
         console.log('✅ Usuario autenticado:', user.id, user.username);
         
-        // Guardar en sesión
         req.session.userId = user.id;
         req.session.userRole = user.role;
         req.session.userActive = user.is_active;
@@ -37,7 +36,7 @@ exports.login = async (req, res) => {
                 });
             }
             console.log('✅ Sesión guardada correctamente');
-            console.log('✅ Redirigiendo a /');
+            console.log('✅ Session ID:', req.sessionID);
             res.redirect('/');
         });
     } else {

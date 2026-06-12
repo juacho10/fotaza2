@@ -44,6 +44,15 @@ const sessionStore = new MySQLStore({
     }
 });
 
+// ========== MIDDLEWARE DE DEBUG ==========
+app.use((req, res, next) => {
+    console.log('🍪 Cookie recibida:', req.headers.cookie);
+    console.log('📝 Session ID:', req.sessionID);
+    console.log('👤 Session userId:', req.session?.userId);
+    next();
+});
+
+// ========== CONFIGURACIÓN DE SESIÓN CORREGIDA ==========
 app.use(session({
     secret: process.env.SESSION_SECRET || 'mi-secreto-super-seguro',
     store: sessionStore,
@@ -53,7 +62,7 @@ app.use(session({
         maxAge: 30 * 24 * 60 * 60 * 1000,
         httpOnly: true,
         secure: true,
-        sameSite: 'lax'
+        sameSite: 'none'  
     }
 }));
 
@@ -68,11 +77,26 @@ app.use('/admin', adminRoutes);
 app.use('/api', apiRoutes);
 app.use('/api/auth', apiAuthRoutes);
 
+// ========== RUTA PRINCIPAL ==========
 app.get('/', async (req, res) => {
+    console.log('🔍 === RUTA PRINCIPAL ===');
+    console.log('🔍 session.userId:', req.session?.userId);
+    
+    let user = null;
+    if (req.session?.userId) {
+        const User = require('../models/User');
+        user = await User.findById(req.session.userId);
+        console.log('🔍 Usuario cargado:', user?.username);
+    }
+    
     try {
         const Post = require('../models/Post');
         const posts = await Post.findAllHome(20);
-        res.render('index', { posts, title: 'Inicio' });
+        res.render('index', { 
+            posts, 
+            title: 'Inicio',
+            currentUser: user
+        });
     } catch (error) {
         console.error(error);
         res.status(500).render('500', { title: 'Error del servidor' });
